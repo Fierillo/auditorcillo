@@ -59,17 +59,16 @@
       padding: 0 max(1rem, env(safe-area-inset-right, 0px)) 0 max(1rem, env(safe-area-inset-left, 0px));
     }
     .topbar-mark {
-      display: grid;
-      place-items: center;
-      width: 2rem;
-      height: 2rem;
-      flex: 0 0 2rem;
-      border-radius: 6px;
-    }
-    .topbar-mark img {
-      width: 2rem;
-      height: 2rem;
       display: block;
+      flex: 0 0 auto;
+      border-radius: 6px;
+      visibility: hidden;
+    }
+    .topbar.docked .topbar-mark { visibility: visible; }
+    .topbar-mark .wordmark {
+      display: block;
+      height: 1.75rem;
+      width: calc(1.75rem * 5758.95 / 1064.54);
     }
     .page {
       max-width: 58rem;
@@ -101,7 +100,11 @@
       max-width: 38rem;
       height: auto;
       overflow: visible;
+      position: relative;
+      z-index: 25;
+      transform-origin: 0 0;
     }
+    h1.docked .wordmark { visibility: hidden; }
     .mascot-empty {
       width: 5rem;
       height: auto;
@@ -525,7 +528,6 @@
   <header class="topbar" id="top">
     <div class="topbar-inner">
       <a class="topbar-mark" href="#top" data-i18n-aria="heading">
-        <img src="logo.svg" width="32" height="32" alt="">
       </a>
       <nav class="langs" data-i18n-aria="language">
         <button type="button" data-lang="en" data-i18n-aria="langEn">
@@ -631,6 +633,7 @@
       checkSummary,
       checkTier,
       formatScore,
+      headerMorph,
       isHighlightedRank,
       isSafeIconUrl,
       matchesMint,
@@ -921,6 +924,36 @@
       if (link) revealFaqHash(link.hash || link.getAttribute('href'));
     });
     window.addEventListener('hashchange', () => revealFaqHash());
+
+    const topbar = document.querySelector('.topbar');
+    const heroTitle = document.querySelector('h1');
+    const heroMark = heroTitle.querySelector('.wordmark');
+    const barMark = heroMark.cloneNode(true);
+    topbar.querySelector('.topbar-mark').append(barMark);
+    let morphBase = null;
+    let morphFrame = 0;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    function measureMorph() {
+      heroMark.style.transform = '';
+      const big = heroMark.getBoundingClientRect();
+      const small = barMark.getBoundingClientRect();
+      morphBase = {
+        big: { top: big.top + window.scrollY, left: big.left, width: big.width },
+        small: { top: small.top, left: small.left, width: small.width },
+      };
+    }
+    function applyMorph() {
+      morphFrame = 0;
+      if (!morphBase) measureMorph();
+      const { x, scale, docked } = headerMorph(window.scrollY, morphBase.big, morphBase.small);
+      heroMark.style.transform = reducedMotion.matches ? '' : `translateX(${x}px) scale(${scale})`;
+      heroTitle.classList.toggle('docked', docked);
+      topbar.classList.toggle('docked', docked);
+    }
+    const scheduleMorph = () => { if (!morphFrame) morphFrame = requestAnimationFrame(applyMorph); };
+    window.addEventListener('scroll', scheduleMorph, { passive: true });
+    window.addEventListener('resize', () => { morphBase = null; scheduleMorph(); });
+    scheduleMorph();
     applyStatic();
     revealFaqHash();
     fetch('ranking.json', { cache: 'no-store' })
