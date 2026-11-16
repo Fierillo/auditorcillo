@@ -32,9 +32,6 @@ export const MESSAGES = {
     faqSourceQ: 'Is the code open?',
     faqSourceA: 'Yes. Auditorcillo is a public project under the MIT license.',
     faqSourceLink: 'Source on GitHub',
-    faqLogoQ: 'Why does a mint have no logo?',
-    faqLogoA:
-      'A mint shows initials instead of a logo when it does not publish a NUT-06 icon_url, or when that URL is not a public https address within the length cap.',
     scoreOutOfTen: '{score}/10',
     fraud: '⚠ Possible fraud: {alerts}',
     offline: 'Does not respond',
@@ -95,9 +92,6 @@ export const MESSAGES = {
     faqSourceQ: '¿El código es abierto?',
     faqSourceA: 'Sí. Auditorcillo es un proyecto público con licencia MIT.',
     faqSourceLink: 'Código en GitHub',
-    faqLogoQ: '¿Por qué un mint no tiene logo?',
-    faqLogoA:
-      'Un mint muestra iniciales en lugar de un logo cuando no publica un icon_url de NUT-06, o cuando esa URL no es una dirección https pública dentro del límite de longitud.',
     scoreOutOfTen: '{score}/10',
     fraud: '⚠ Posible fraude: {alerts}',
     offline: 'No responde',
