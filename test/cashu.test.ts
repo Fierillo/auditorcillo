@@ -37,6 +37,9 @@ describe('assertMintUrl', () => {
     expect(() => assertMintUrl('https://mint.example.com/Bitcoin')).not.toThrow();
     expect(() => assertMintUrl('https://21mint.me')).not.toThrow();
     expect(() => assertMintUrl('https://1.1.1.1')).not.toThrow();
+    expect(() => assertMintUrl('https://100.128.0.1')).not.toThrow();
+    expect(() => assertMintUrl('https://198.20.0.1')).not.toThrow();
+    expect(() => assertMintUrl('https://[2606:4700:4700::1111]')).not.toThrow();
   });
 
   it('rejects non-https schemes, credentials and private or reserved addresses', () => {
@@ -56,6 +59,16 @@ describe('assertMintUrl', () => {
       'https://[fd00::1]/',
       'https://[fe80::1]/',
       'https://[::ffff:169.254.169.254]/',
+      'https://[::7f00:1]',
+      'https://[64:ff9b::a9fe:a9fe]',
+      'https://100.64.0.1',
+      'https://100.127.255.254',
+      'https://198.18.0.1',
+      'https://198.19.255.1',
+      'https://192.0.0.8',
+      'https://[ff02::1]',
+      'https://[::ffff:0:a9fe:a9fe]',
+      'https://[::ffff:a9fe:a9fe]',
       'not-a-url',
     ]) {
       expect(() => assertMintUrl(url), url).toThrow(/mint URL/i);

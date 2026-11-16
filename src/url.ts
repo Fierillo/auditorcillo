@@ -1,4 +1,6 @@
 // Shared URL checks for mint endpoints and mint-provided icon URLs (NUT-06).
+import { BlockList, isIP } from 'node:net';
+
 export type MintUrlOptions = { allowLocal?: boolean };
 
 function ipv4(host: string): number[] | null {
@@ -15,28 +17,21 @@ function isLoopback(host: string): boolean {
   return !!p && p[0] === 127;
 }
 
+/** Non-public address ranges (loopback included). BlockList checks IPv4-mapped IPv6 (::ffff:a.b.c.d) against the
+ * IPv4 rules; the other IPv6 ranges that embed an IPv4 address (compatible, translated, NAT64) are refused whole. */
+const RESERVED = new BlockList();
+for (const [net, prefix] of [
+  ['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12],
+  ['192.0.0.0', 24], ['192.168.0.0', 16], ['198.18.0.0', 15], ['224.0.0.0', 3],
+] as const) RESERVED.addSubnet(net, prefix, 'ipv4');
+for (const [net, prefix] of [
+  ['::', 96], ['::ffff:0:0:0', 96], ['64:ff9b::', 96], ['fc00::', 7], ['fe80::', 10], ['ff00::', 8],
+] as const) RESERVED.addSubnet(net, prefix, 'ipv6');
+
+/** True for an IP literal in a non-public range; host names are left to the DNS check. */
 function isPrivateOrReserved(host: string): boolean {
-  const h = host.toLowerCase();
-  const mappedDotted = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(h);
-  if (mappedDotted) return isLoopback(mappedDotted[1]) || isPrivateOrReserved(mappedDotted[1]);
-  const mappedHex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(h);
-  if (mappedHex) {
-    const hi = parseInt(mappedHex[1], 16);
-    const lo = parseInt(mappedHex[2], 16);
-    const ip = `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
-    return isLoopback(ip) || isPrivateOrReserved(ip);
-  }
-  const p = ipv4(h);
-  if (p) {
-    const [a, b] = p;
-    return a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || a >= 224;
-  }
-  if (h.includes(':')) {
-    if (h === '::' || h === '::1') return true;
-    if (h.startsWith('fc') || h.startsWith('fd')) return true;
-    if (/^fe[89ab]/.test(h)) return true;
-  }
-  return false;
+  const family = isIP(host);
+  return family !== 0 && RESERVED.check(host, family === 4 ? 'ipv4' : 'ipv6');
 }
 
 /** Throws unless `url` is https to a public host, or loopback with `{ allowLocal: true }`. */
