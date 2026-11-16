@@ -97,7 +97,8 @@
       letter-spacing: -.045em;
       line-height: 1;
       white-space: nowrap;
-      padding-bottom: .85em;
+      padding-top: .22em;
+      padding-bottom: .35em;
     }
     .mascot-o {
       display: inline-block;
@@ -536,8 +537,8 @@
   <section class="hero">
     <div class="brand">
       <h1 data-i18n-aria="heading">
-        <span aria-hidden="true">Auditorcill</span><svg class="mascot-o" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-          <use href="mascot.svg#figure"/>
+        <span aria-hidden="true">Auditorcill</span><svg class="mascot-o" viewBox="245 266 444 444" aria-hidden="true" focusable="false">
+          <use href="logo.svg#figure"/>
         </svg>
       </h1>
       <p class="tagline" data-i18n="intro">Ranking of Cashu mints by observed behaviour, not by what they announce.</p>
@@ -768,9 +769,9 @@
         const empty = el('li', '', 'status');
         const img = document.createElement('img');
         img.className = 'mascot-empty';
-        img.src = 'mascot.svg';
+        img.src = 'logo.svg';
         img.width = 80;
-        img.height = 120;
+        img.height = 92;
         img.alt = '';
         empty.append(img, el('p', t('searchEmpty', { query: query.trim() })));
         list.replaceChildren(empty);
