@@ -102,7 +102,8 @@
     .langs button[data-lang="es"] { padding-left: 0; }
     .langs button[aria-pressed="true"] { color: var(--accent); }
     .langs button:focus-visible,
-    .score-help summary:focus-visible,
+    .faq summary:focus-visible,
+    .faq-link:focus-visible,
     .checks summary:focus-visible,
     .search input:focus-visible,
     .search-clear:focus-visible {
@@ -152,45 +153,40 @@
       font-size: .88rem;
       flex: 1 1 12rem;
     }
-    .score-help[open] {
-      flex: 1 0 100%;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
+    .faq-link {
+      color: var(--muted);
+      font-size: .85rem;
+      text-underline-offset: .2em;
     }
-    .score-help summary {
-      list-style: none;
-      cursor: pointer;
-      width: 2.25rem;
-      height: 2.25rem;
-      min-width: 2.25rem;
-      border-radius: 50%;
-      border: 1px solid var(--line);
-      display: grid;
-      place-items: center;
+    .faq-link:hover { color: var(--accent); }
+    .faq {
+      margin: 2.4rem 0 1rem;
+    }
+    .faq h2 {
+      margin: 0 0 .7rem;
+      font-size: 1.15rem;
       font-weight: 700;
-      color: var(--muted);
-      background: var(--bg-elev);
+      letter-spacing: -.02em;
     }
-    .score-help summary::-webkit-details-marker,
-    .score-help summary::marker { display: none; content: ""; }
-    .score-help[open] summary {
-      color: var(--on-accent);
-      background: var(--accent);
-      border-color: var(--accent);
+    .faq details {
+      border-top: 1px solid var(--line);
     }
-    .help-panel {
-      flex: 1 0 100%;
-      margin: .6rem 0 0;
-      padding: .85rem 1rem;
-      background: var(--bg-card);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
+    .faq details:last-of-type { border-bottom: 1px solid var(--line); }
+    .faq summary {
+      cursor: pointer;
+      padding: .8rem 0;
+      font-weight: 600;
+      min-height: 2.75rem;
+    }
+    .faq summary:hover { color: var(--accent); }
+    .faq-a {
+      margin: 0 0 1rem;
       color: var(--muted);
-      font-size: .88rem;
-      line-height: 1.45;
+      font-size: .92rem;
+      line-height: 1.5;
       max-width: 46rem;
     }
+    .faq-a a { color: var(--accent); text-underline-offset: .15em; }
     .search {
       display: flex;
       gap: .45rem;
@@ -500,10 +496,7 @@
   </header>
   <div class="toolbar">
     <p id="updated" class="updated"></p>
-    <details class="score-help" hidden>
-      <summary data-i18n-aria="scoreHelpLabel">?</summary>
-      <p id="score-help" class="help-panel"></p>
-    </details>
+    <a class="faq-link" href="#faq-score" data-i18n="faqScoreLink">How is this calculated?</a>
   </div>
   <div class="search">
     <div class="search-field">
@@ -515,6 +508,37 @@
   <ol id="ranking" class="ranking">
     <li class="status" data-i18n="loading">Loading…</li>
   </ol>
+  <section class="faq" id="faq" aria-labelledby="faq-heading">
+    <h2 id="faq-heading" data-i18n="faqHeading">FAQ</h2>
+    <details id="faq-score" open>
+      <summary data-i18n="faqScoreQ">How is the score calculated?</summary>
+      <p id="faq-score-a" class="faq-a"></p>
+    </details>
+    <details>
+      <summary data-i18n="faqCashuQ">What is Cashu, and what is a mint?</summary>
+      <p class="faq-a" data-i18n="faqCashuA">Cashu is an ecash protocol. A mint is a server that issues and redeems Cashu tokens. Auditorcillo ranks public mints by what it observes when it probes them, not by what they announce.</p>
+    </details>
+    <details>
+      <summary data-i18n="faqChecksQ">What does Auditorcillo check?</summary>
+      <p class="faq-a" data-i18n="faqChecksA">On every run it checks that keyset IDs derive from the published keys and that active keysets publish keys (NUT-02), and that the mint can create a mint quote (NUT-04) and a melt quote (NUT-05). If the mint announces NUT-07, it also checks token state. A full cycle — issuing tokens, DLEQ proofs, swaps, rejecting a spent token, paying a Lightning invoice and marking tokens as spent — runs on local FakeWallet mints, and on real mints only when a wallet is configured.</p>
+    </details>
+    <details>
+      <summary data-i18n="faqUpdateQ">How often is the ranking updated?</summary>
+      <p class="faq-a" data-i18n="faqUpdateA">A scheduled GitHub Action probes the mint list about every 3 hours and publishes a new ranking.json.</p>
+    </details>
+    <details>
+      <summary data-i18n="faqFraudQ">What does “possible fraud” mean?</summary>
+      <p class="faq-a" data-i18n="faqFraudA">A mint is flagged and its score is set to 0 if it accepts an already spent token, or if its keyset IDs do not derive from its published keys.</p>
+    </details>
+    <details>
+      <summary data-i18n="faqSourceQ">Is the code open?</summary>
+      <p class="faq-a"><span data-i18n="faqSourceA">Yes. Auditorcillo is a public project under the MIT license.</span> <a href="https://github.com/Fierillo/auditorcillo" data-i18n="faqSourceLink">Source on GitHub</a>.</p>
+    </details>
+    <details>
+      <summary data-i18n="faqLogoQ">Why does a mint have no logo?</summary>
+      <p class="faq-a" data-i18n="faqLogoA">A mint shows initials instead of a logo when it does not publish a NUT-06 icon_url, or when that URL is not a public https address within the length cap.</p>
+    </details>
+  </section>
   <script type="module">
     import { MESSAGES, pickLanguage, translate } from './i18n.js';
     import {
@@ -560,6 +584,12 @@
       for (const node of document.querySelectorAll('[data-i18n-aria]')) node.setAttribute('aria-label', t(node.dataset.i18nAria));
       for (const node of document.querySelectorAll('[data-i18n-placeholder]')) node.setAttribute('placeholder', t(node.dataset.i18nPlaceholder));
       for (const btn of document.querySelectorAll('[data-lang]')) btn.setAttribute('aria-pressed', String(btn.dataset.lang === lang));
+      fillScoreFaq();
+    }
+
+    function fillScoreFaq() {
+      const node = document.getElementById('faq-score-a');
+      if (node && ranking) node.textContent = t('faqScoreA', ranking.weights);
     }
 
     function displayTen(value, max, compact) {
@@ -671,13 +701,10 @@
 
     function render() {
       const list = document.getElementById('ranking');
-      const help = document.getElementById('score-help');
-      const helpBox = help.parentElement;
       const clear = document.getElementById('search-clear');
       clear.hidden = normalizeQuery(query) === '';
 
       if (loadFailed) {
-        helpBox.hidden = true;
         list.replaceChildren(el('li', t('loadError'), 'status error'));
         return;
       }
@@ -687,8 +714,7 @@
       document.getElementById('updated').textContent = t('updated', {
         time: new Date(generatedAt).toLocaleString(lang === 'es' ? 'es-AR' : 'en-GB', { timeZone: 'America/Argentina/Buenos_Aires' }),
       });
-      help.textContent = t('scoreHelpBody', weights);
-      helpBox.hidden = false;
+      fillScoreFaq();
       const shown = mints
         .map((m, i) => [m, i])
         .filter(([m]) => matchesMint(m.name, m.url, query));

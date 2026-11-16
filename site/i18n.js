@@ -13,9 +13,28 @@ export const MESSAGES = {
     colInfo: 'Info',
     loading: 'Loading…',
     updated: 'Updated: {time} (Buenos Aires time).',
-    scoreHelpLabel: 'How the score is calculated',
-    scoreHelpBody:
+    faqHeading: 'FAQ',
+    faqScoreLink: 'How is this calculated?',
+    faqScoreQ: 'How is the score calculated?',
+    faqScoreA:
       'Scores are shown on a 1–10 scale. A mint that accepts spent tokens or publishes invalid keysets scores 0. The overall score combines availability {availability} %, announced NUT compliance {nuts} %, keyset consistency {keysets} %, and info and contact {info} %. Availability is the 7-day uptime times a latency factor (full credit when the mint is fast, half when it is slow).',
+    faqCashuQ: 'What is Cashu, and what is a mint?',
+    faqCashuA:
+      'Cashu is an ecash protocol. A mint is a server that issues and redeems Cashu tokens. Auditorcillo ranks public mints by what it observes when it probes them, not by what they announce.',
+    faqChecksQ: 'What does Auditorcillo check?',
+    faqChecksA:
+      'On every run it checks that keyset IDs derive from the published keys and that active keysets publish keys (NUT-02), and that the mint can create a mint quote (NUT-04) and a melt quote (NUT-05). If the mint announces NUT-07, it also checks token state. A full cycle — issuing tokens, DLEQ proofs, swaps, rejecting a spent token, paying a Lightning invoice and marking tokens as spent — runs on local FakeWallet mints, and on real mints only when a wallet is configured.',
+    faqUpdateQ: 'How often is the ranking updated?',
+    faqUpdateA: 'A scheduled GitHub Action probes the mint list about every 3 hours and publishes a new ranking.json.',
+    faqFraudQ: 'What does “possible fraud” mean?',
+    faqFraudA:
+      'A mint is flagged and its score is set to 0 if it accepts an already spent token, or if its keyset IDs do not derive from its published keys.',
+    faqSourceQ: 'Is the code open?',
+    faqSourceA: 'Yes. Auditorcillo is a public project under the MIT license.',
+    faqSourceLink: 'Source on GitHub',
+    faqLogoQ: 'Why does a mint have no logo?',
+    faqLogoA:
+      'A mint shows initials instead of a logo when it does not publish a NUT-06 icon_url, or when that URL is not a public https address within the length cap.',
     scoreOutOfTen: '{score}/10',
     fraud: '⚠ Possible fraud: {alerts}',
     offline: 'Does not respond',
@@ -57,9 +76,28 @@ export const MESSAGES = {
     colInfo: 'Info',
     loading: 'Cargando…',
     updated: 'Actualizado: {time} (hora de Buenos Aires).',
-    scoreHelpLabel: 'Cómo se calcula el puntaje',
-    scoreHelpBody:
+    faqHeading: 'Preguntas frecuentes',
+    faqScoreLink: '¿Cómo se calcula?',
+    faqScoreQ: '¿Cómo se calcula el puntaje?',
+    faqScoreA:
       'Los puntajes se muestran en una escala de 1 a 10. Un mint que acepta tokens gastados o publica keysets inválidos queda en 0. El puntaje general combina disponibilidad {availability} %, cumplimiento de NUTs anunciados {nuts} %, consistencia de keysets {keysets} %, e info y contacto {info} %. La disponibilidad es el tiempo en línea de los últimos 7 días por un factor de latencia (crédito completo cuando el mint responde rápido, la mitad cuando es lento).',
+    faqCashuQ: '¿Qué es Cashu y qué es un mint?',
+    faqCashuA:
+      'Cashu es un protocolo de ecash. Un mint es un servidor que emite y canjea tokens Cashu. Auditorcillo ordena mints públicos según lo que observa al probarlos, no según lo que anuncian.',
+    faqChecksQ: '¿Qué chequea Auditorcillo?',
+    faqChecksA:
+      'En cada corrida comprueba que los IDs de keyset deriven de las claves publicadas y que los keysets activos publiquen claves (NUT-02), y que el mint pueda crear una cotización de mint (NUT-04) y una de melt (NUT-05). Si el mint anuncia NUT-07, también chequea el estado de los tokens. Un ciclo completo — emitir tokens, pruebas DLEQ, intercambios, rechazar un token gastado, pagar una factura Lightning y marcar tokens como gastados — corre en mints locales con FakeWallet, y en mints reales solo cuando hay una wallet configurada.',
+    faqUpdateQ: '¿Cada cuánto se actualiza el ranking?',
+    faqUpdateA: 'Una GitHub Action programada prueba la lista de mints cada 3 horas aproximadamente y publica un nuevo ranking.json.',
+    faqFraudQ: '¿Qué significa «posible fraude»?',
+    faqFraudA:
+      'Un mint queda marcado y su puntaje en 0 si acepta un token ya gastado, o si los IDs de sus keysets no derivan de las claves que publica.',
+    faqSourceQ: '¿El código es abierto?',
+    faqSourceA: 'Sí. Auditorcillo es un proyecto público con licencia MIT.',
+    faqSourceLink: 'Código en GitHub',
+    faqLogoQ: '¿Por qué un mint no tiene logo?',
+    faqLogoA:
+      'Un mint muestra iniciales en lugar de un logo cuando no publica un icon_url de NUT-06, o cuando esa URL no es una dirección https pública dentro del límite de longitud.',
     scoreOutOfTen: '{score}/10',
     fraud: '⚠ Posible fraude: {alerts}',
     offline: 'No responde',
