@@ -4,13 +4,14 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { setGlobalRequestOptions } from '@cashu/cashu-ts';
 import { audit, printRanking, rankingJson } from './audit.ts';
-import { cashuPort } from './cashu.ts';
+import { cappedFetch, cashuPort } from './cashu.ts';
 import { nwcWallet } from './nwc.ts';
 
 const [listPath, outPath] = process.argv.slice(2);
 if (!listPath || !outPath) throw new Error('usage: node src/cli.ts <mints.json> <ranking.json>');
 
 setGlobalRequestOptions({ requestTimeout: 15_000, redirect: 'error' });
+globalThis.fetch = cappedFetch(globalThis.fetch, 1_000_000);
 const wallet = process.env.NWC_URL ? nwcWallet(process.env.NWC_URL) : undefined;
 const previous = await readFile(outPath, 'utf8').then(JSON.parse, () => undefined); // carries uptime history
 const ranking = await audit(JSON.parse(await readFile(listPath, 'utf8')), {

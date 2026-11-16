@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { announcedNuts, assertMintUrl, NUTS_MAX } from '../src/cashu.ts';
+import { announcedNuts, assertMintUrl, cappedFetch, NUTS_MAX } from '../src/cashu.ts';
 
 describe('announcedNuts', () => {
   it('lists supported NUTs and the enabled mint/melt methods, ignoring disabled or unsupported ones', () => {
@@ -69,5 +69,35 @@ describe('assertMintUrl', () => {
     expect(() => assertMintUrl('https://127.0.0.1', { allowLocal: true })).not.toThrow();
     expect(() => assertMintUrl('http://mint.example.com', { allowLocal: true })).toThrow(/mint URL/i);
     expect(() => assertMintUrl('http://10.0.0.1', { allowLocal: true })).toThrow(/mint URL/i);
+  });
+});
+
+describe('cappedFetch', () => {
+  const serve = (bytes: number) => {
+    let pulled = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(ctl) {
+        if (pulled >= bytes) return ctl.close();
+        const chunk = new Uint8Array(Math.min(64 * 1024, bytes - pulled)).fill(32);
+        pulled += chunk.byteLength;
+        ctl.enqueue(chunk);
+      },
+    });
+    const inner = async () => new Response(body, { status: 200, headers: { 'content-type': 'application/json' } });
+    return { inner: inner as unknown as typeof fetch, pulled: () => pulled };
+  };
+
+  it('passes a response within the cap through unchanged', async () => {
+    const res = await cappedFetch(serve(1000).inner, 1000)('https://mint.example.com/v1/info');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('application/json');
+    expect((await res.text()).length).toBe(1000);
+  });
+
+  it('fails reading a body past the cap and stops downloading it', async () => {
+    const big = serve(50_000_000);
+    const res = await cappedFetch(big.inner, 1_000_000)('https://mint.example.com/v1/info');
+    await expect(res.text()).rejects.toThrow(/exceeds 1000000 bytes/);
+    expect(big.pulled()).toBeLessThan(2_000_000);
   });
 });

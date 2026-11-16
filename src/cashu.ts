@@ -22,6 +22,26 @@ export function announcedNuts(nuts: unknown): number[] {
     .map(([n]) => Number(n));
 }
 
+/** Wraps `fetch` so a response body larger than `maxBytes` fails to read instead of filling memory.
+ * cashu-ts calls the global fetch, so the CLI installs this one globally. */
+export function cappedFetch(inner: typeof fetch, maxBytes: number): typeof fetch {
+  return async (input, init) => {
+    const res = await inner(input, init);
+    if (!res.body) return res;
+    let seen = 0;
+    const body = res.body.pipeThrough(
+      new TransformStream<Uint8Array, Uint8Array>({
+        transform(chunk, ctl) {
+          seen += chunk.byteLength;
+          if (seen > maxBytes) ctl.error(new Error(`mint response exceeds ${maxBytes} bytes`));
+          else ctl.enqueue(chunk);
+        },
+      }),
+    );
+    return new Response(body, { status: res.status, statusText: res.statusText, headers: res.headers });
+  };
+}
+
 export function cashuPort(url: string, opts: MintUrlOptions = {}): MintPort {
   assertMintUrl(url, opts);
   // Public reads go through Mint, which doesn't validate keysets, so a cheating mint is reported, not refused.
