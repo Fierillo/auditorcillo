@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { announcedNuts, assertMintUrl } from '../src/cashu.ts';
+import { announcedNuts, assertMintUrl, NUTS_MAX } from '../src/cashu.ts';
 
 describe('announcedNuts', () => {
   it('lists supported NUTs and the enabled mint/melt methods, ignoring disabled or unsupported ones', () => {
@@ -14,6 +14,21 @@ describe('announcedNuts', () => {
         junk: { supported: true },
       }),
     ).toEqual([4, 7, 17]);
+  });
+});
+
+describe('announcedNuts bounds', () => {
+  it('keeps only distinct NUT numbers 0..999, at most NUTS_MAX of them', () => {
+    const flood = Object.fromEntries(Array.from({ length: 20_000 }, (_, i) => [String(i), { supported: true }]));
+    const nuts = announcedNuts(flood);
+    expect(nuts.length).toBe(NUTS_MAX);
+    expect(nuts.every((n) => Number.isInteger(n) && n >= 0 && n <= 999)).toBe(true);
+    expect(announcedNuts({ '7': { supported: true }, '007': { supported: true }, '1000': { supported: true }, '99999999999999999999': { supported: true } })).toEqual([7]);
+  });
+
+  it('ignores a nuts value that is not an object and entries that are null', () => {
+    for (const raw of [undefined, null, 'x', 5, [1, 2]]) expect(announcedNuts(raw), String(raw)).toEqual([]);
+    expect(announcedNuts({ '4': null, '7': { supported: true } })).toEqual([7]);
   });
 });
 

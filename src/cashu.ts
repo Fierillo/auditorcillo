@@ -9,10 +9,16 @@ type RawNut = { supported?: unknown; methods?: unknown[]; disabled?: boolean };
 export { assertMintUrl, type MintUrlOptions };
 
 
-/** NUT numbers a mint announces in /v1/info: `supported` ones plus NUT-04/05 when enabled with a method. */
-export function announcedNuts(nuts: Record<string, RawNut>): number[] {
-  return Object.entries(nuts)
-    .filter(([n, v]) => /^\d+$/.test(n) && (Array.isArray(v.supported) ? v.supported.length > 0 : v.supported === true || (!!v.methods?.length && !v.disabled)))
+/** More than any real mint announces; keeps a hostile list from bloating ranking.json. */
+export const NUTS_MAX = 64;
+
+/** NUT numbers a mint announces in /v1/info: `supported` ones plus NUT-04/05 when enabled with a method.
+ * Only distinct plain numbers 0..999, at most NUTS_MAX; anything malformed is ignored. */
+export function announcedNuts(nuts: unknown): number[] {
+  if (typeof nuts !== 'object' || nuts === null || Array.isArray(nuts)) return [];
+  return Object.entries(nuts as Record<string, RawNut | null>)
+    .filter(([n, v]) => /^(0|[1-9]\d{0,2})$/.test(n) && typeof v === 'object' && v !== null && (Array.isArray(v.supported) ? v.supported.length > 0 : v.supported === true || (!!v.methods?.length && !v.disabled)))
+    .slice(0, NUTS_MAX)
     .map(([n]) => Number(n));
 }
 
@@ -31,7 +37,7 @@ export function cashuPort(url: string, opts: MintUrlOptions = {}): MintPort {
   return {
     async info() {
       const i = await mint.getInfo();
-      return { ...i, nuts: announcedNuts(i.nuts as Record<string, RawNut>) };
+      return { ...i, nuts: announcedNuts(i.nuts) };
     },
     async keys() {
       const { keysets } = await mint.getKeys();
