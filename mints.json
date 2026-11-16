@@ -1,0 +1,11 @@
+[
+  { "url": "https://testnut.cashu.space", "cycle": true },
+  { "url": "https://nofee.testnut.cashu.space", "cycle": true },
+  { "url": "https://fake.thesimplekid.dev", "cycle": true },
+  { "url": "https://mint.minibits.cash/Bitcoin", "cycle": false },
+  { "url": "https://mint.macadamia.cash", "cycle": false },
+  { "url": "https://21mint.me", "cycle": false },
+  { "url": "https://mint.cubabitcoin.org", "cycle": false },
+  { "url": "https://mint.cashu.chat", "cycle": false },
+  { "url": "https://mint.coinos.io", "cycle": false }
+]
