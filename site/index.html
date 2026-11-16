@@ -3,52 +3,360 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#12100e">
   <title data-i18n="title">Auditorcillo · Cashu mint ranking</title>
   <style>
-    body { font: 16px/1.5 system-ui, sans-serif; margin: 0 auto; padding: 1rem; max-width: 60rem; color: #222; background: #fafafa; }
-    header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
-    h1 { margin: 0; }
-    .langs { display: flex; gap: .3rem; }
-    .langs button { font: inherit; cursor: pointer; }
-    .langs button[aria-pressed="true"] { font-weight: bold; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { padding: .4rem .5rem; border-bottom: 1px solid #ddd; text-align: left; vertical-align: top; }
-    td.n { text-align: right; font-variant-numeric: tabular-nums; }
-    .url { color: #666; font-size: .85em; word-break: break-all; }
-    .alert { color: #b00020; font-weight: bold; }
-    .ok { color: #1b7f3b; } .fail { color: #b00020; }
-    details ul { margin: .3rem 0; padding-left: 1.2rem; font-size: .9em; }
-    @media (max-width: 40rem) { .opt { display: none; } }
+    :root {
+      --bg: #12100e;
+      --bg-elev: #1c1916;
+      --bg-card: #1a1714;
+      --line: #3a342c;
+      --track: #2c2823;
+      --text: #f3efe7;
+      --muted: #b6ae9f;
+      --accent: #e8b44c;
+      --high: #3dcc7a;
+      --mid: #e8b44c;
+      --low: #ee6d5f;
+      --focus: #7ec8ff;
+      --on-accent: #1a140c;
+      --shadow: 0 10px 28px rgba(0, 0, 0, .35);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    html { color-scheme: dark; }
+    body {
+      font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0 auto;
+      padding: 1.25rem 1rem 2.5rem;
+      max-width: 58rem;
+      color: var(--text);
+      background:
+        radial-gradient(1100px 460px at 50% -8%, #2a2116 0%, transparent 62%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    ::selection { background: color-mix(in srgb, var(--accent) 40%, transparent); color: var(--text); }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: .75rem 1.25rem;
+    }
+    .brand { flex: 1 1 16rem; }
+    h1 {
+      margin: 0;
+      font-size: 1.85rem;
+      font-weight: 700;
+      letter-spacing: -.03em;
+      line-height: 1.15;
+    }
+    h1::before {
+      content: "";
+      display: inline-block;
+      width: .7em;
+      height: .7em;
+      margin-right: .45rem;
+      vertical-align: -.05em;
+      border-radius: 50%;
+      background: conic-gradient(from 210deg, #f0d78c, #c4891c, #f0d78c);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+    }
+    .tagline {
+      margin: .5rem 0 0;
+      color: var(--muted);
+      max-width: 38rem;
+      font-size: 1.02rem;
+    }
+    .langs {
+      display: inline-flex;
+      padding: .15rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--bg-elev);
+    }
+    .langs button {
+      font: inherit;
+      font-size: .8rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      color: var(--muted);
+      background: transparent;
+      border: 0;
+      border-radius: 999px;
+      padding: .45rem .75rem;
+      cursor: pointer;
+    }
+    .langs button[aria-pressed="true"] {
+      color: var(--on-accent);
+      background: var(--accent);
+    }
+    .langs button:focus-visible,
+    .checks summary:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+    .updated {
+      margin: 1.2rem 0 .85rem;
+      color: var(--muted);
+      font-size: .88rem;
+    }
+    .ranking {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: .85rem;
+    }
+    .status, .card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .status {
+      padding: 1.2rem 1.1rem;
+      text-align: center;
+      color: var(--muted);
+    }
+    .status.error { color: var(--low); font-weight: 600; }
+    .card { padding: 1rem 1.1rem; }
+    .card.is-top {
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent), var(--shadow);
+    }
+    .card.has-fraud {
+      border-color: color-mix(in srgb, var(--low) 55%, var(--line));
+    }
+    .banner {
+      font-size: .85rem;
+      font-weight: 700;
+      color: var(--low);
+      background: color-mix(in srgb, var(--low) 14%, var(--bg-card));
+      border: 1px solid color-mix(in srgb, var(--low) 40%, var(--line));
+      border-radius: 10px;
+      padding: .45rem .65rem;
+      margin-bottom: .8rem;
+    }
+    .card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: .85rem;
+    }
+    .who { display: flex; gap: .7rem; min-width: 0; flex: 1; }
+    .rank {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      font-size: .95rem;
+      color: var(--muted);
+      padding-top: .15rem;
+      min-width: 1.5rem;
+    }
+    .card.place-1 .rank { color: var(--accent); }
+    .card.place-2 .rank { color: #c8c8d0; }
+    .card.place-3 .rank { color: #d09a6a; }
+    .id { min-width: 0; }
+    .name {
+      font-weight: 600;
+      font-size: 1.05rem;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+    .url {
+      color: var(--muted);
+      font-size: .8rem;
+      word-break: break-all;
+      margin-top: .15rem;
+    }
+    .score {
+      --pct: 0;
+      display: grid;
+      place-items: center;
+      width: 3.5rem;
+      height: 3.5rem;
+      flex: 0 0 3.5rem;
+      border-radius: 50%;
+      background: conic-gradient(var(--tier) calc(var(--pct) * 1%), var(--track) 0);
+    }
+    .score > span {
+      display: grid;
+      place-items: center;
+      width: 2.65rem;
+      height: 2.65rem;
+      border-radius: 50%;
+      background: var(--bg-card);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      font-size: .95rem;
+      letter-spacing: -.03em;
+    }
+    .score.high { --tier: var(--high); }
+    .score.mid { --tier: var(--mid); }
+    .score.low { --tier: var(--low); }
+    .meter { margin-top: .85rem; }
+    .meter-label {
+      display: flex;
+      justify-content: space-between;
+      gap: .5rem;
+      font-size: .75rem;
+      color: var(--muted);
+      margin-bottom: .25rem;
+    }
+    .meter-label .value { font-variant-numeric: tabular-nums; color: var(--text); }
+    .track {
+      height: .4rem;
+      border-radius: 999px;
+      background: var(--track);
+      overflow: hidden;
+    }
+    .fill {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+    .fill.high { background: var(--high); }
+    .fill.mid { background: var(--mid); }
+    .fill.low { background: var(--low); }
+    .parts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .55rem 1rem;
+      margin-top: .8rem;
+    }
+    .parts .meter { margin-top: 0; }
+    .parts .track { height: .3rem; }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .4rem;
+      margin-top: .8rem;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      font-size: .75rem;
+      font-weight: 600;
+      line-height: 1;
+      padding: .35rem .55rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #241f1a;
+    }
+    .chip.ok {
+      color: var(--high);
+      border-color: color-mix(in srgb, var(--high) 35%, var(--line));
+      background: color-mix(in srgb, var(--high) 12%, var(--bg-card));
+    }
+    .chip.mid {
+      color: var(--mid);
+      border-color: color-mix(in srgb, var(--mid) 35%, var(--line));
+      background: color-mix(in srgb, var(--mid) 12%, var(--bg-card));
+    }
+    .chip.fail {
+      color: var(--low);
+      border-color: color-mix(in srgb, var(--low) 40%, var(--line));
+      background: color-mix(in srgb, var(--low) 12%, var(--bg-card));
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .35rem .85rem;
+      margin-top: .75rem;
+      color: var(--muted);
+      font-size: .8rem;
+    }
+    .meta .value { color: var(--text); font-variant-numeric: tabular-nums; }
+    .checks {
+      margin-top: .75rem;
+      border-top: 1px solid var(--line);
+      padding-top: .55rem;
+    }
+    .checks summary {
+      cursor: pointer;
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--muted);
+      border-radius: 4px;
+      padding: .35rem 0;
+    }
+    .checks summary:hover { color: var(--text); }
+    .checks ul {
+      margin: .45rem 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: .25rem;
+    }
+    .checks li {
+      font-size: .85rem;
+      word-break: break-word;
+    }
+    .checks li.ok { color: var(--high); }
+    .checks li.fail { color: var(--low); }
+    .footnote {
+      margin: 1.4rem 0 2rem;
+      color: var(--muted);
+      font-size: .85rem;
+      line-height: 1.45;
+      max-width: 46rem;
+    }
+    @media (hover: hover) {
+      .card { transition: border-color .15s ease, box-shadow .15s ease; }
+      .card:hover { border-color: color-mix(in srgb, var(--accent) 30%, var(--line)); }
+    }
+    @media (min-width: 40rem) {
+      body { padding: 2rem 1.5rem 3rem; }
+      h1 { font-size: 2.15rem; }
+      .parts { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1 data-i18n="heading">Auditorcillo</h1>
+    <div class="brand">
+      <h1 data-i18n="heading">Auditorcillo</h1>
+      <p class="tagline" data-i18n="intro">Ranking of Cashu mints by observed behaviour, not by what they announce.</p>
+    </div>
     <nav class="langs" data-i18n-aria="language">
       <button type="button" data-lang="en">EN</button>
       <button type="button" data-lang="es">ES</button>
     </nav>
   </header>
-  <p><span data-i18n="intro">Ranking of Cashu mints by observed behaviour, not by what they announce.</span> <span id="updated"></span></p>
-  <table>
-    <thead><tr>
-      <th data-i18n="colRank">#</th>
-      <th data-i18n="colMint">Mint</th>
-      <th data-i18n="colScore">Score</th>
-      <th class="opt" data-i18n="colAvailability">Availability</th>
-      <th class="opt" data-i18n="colNuts">NUTs</th>
-      <th class="opt" data-i18n="colKeysets">Keysets</th>
-      <th class="opt" data-i18n="colInfo">Info</th>
-    </tr></thead>
-    <tbody id="ranking"><tr><td colspan="7" data-i18n="loading">Loading…</td></tr></tbody>
-  </table>
-  <p id="weights"></p>
+  <p id="updated" class="updated"></p>
+  <ol id="ranking" class="ranking">
+    <li class="status" data-i18n="loading">Loading…</li>
+  </ol>
+  <p id="weights" class="footnote"></p>
   <script type="module">
     import { MESSAGES, pickLanguage, translate } from './i18n.js';
+    import {
+      barPercent,
+      checkSummary,
+      checkTier,
+      formatScore,
+      isHighlightedRank,
+      partPercent,
+      scoreTier,
+    } from './view.js';
 
     const STORAGE_KEY = 'auditorcillo-lang';
+    const PARTS = [
+      ['availability', 'colAvailability'],
+      ['nuts', 'colNuts'],
+      ['keysets', 'colKeysets'],
+      ['info', 'colInfo'],
+    ];
     const el = (tag, text, cls) => Object.assign(document.createElement(tag), { textContent: text ?? '', className: cls ?? '' });
-    const pts = (v) => (Math.round(v * 10) / 10).toString();
 
     let lang = pickLanguage(localStorage.getItem(STORAGE_KEY), navigator.language);
     let ranking = null;
@@ -70,13 +378,94 @@
       for (const btn of document.querySelectorAll('[data-lang]')) btn.setAttribute('aria-pressed', String(btn.dataset.lang === lang));
     }
 
+    function meter(label, valueText, percent, tier) {
+      const wrap = el('div', '', 'meter');
+      const lab = el('div', '', 'meter-label');
+      lab.append(el('span', label), el('span', valueText, 'value'));
+      const track = el('div', '', 'track');
+      const fill = el('div', '', tier ? `fill ${tier}` : 'fill');
+      fill.style.width = `${percent}%`;
+      track.append(fill);
+      wrap.append(lab, track);
+      return wrap;
+    }
+
+    function metaItem(label, value) {
+      const item = el('span', '', 'meta-item');
+      item.append(el('span', label), document.createTextNode(' '), el('span', value, 'value'));
+      return item;
+    }
+
+    function renderMint(m, i, weights) {
+      const card = el('li', '', 'card');
+      if (isHighlightedRank(i, m.score.total)) card.classList.add('is-top', `place-${i + 1}`);
+      if (m.score.alerts.length) card.classList.add('has-fraud');
+
+      if (m.score.alerts.length) {
+        card.append(el('div', t('fraud', { alerts: m.score.alerts.map(checkLabel).join(', ') }), 'banner'));
+      }
+
+      const name = el('div', m.name || m.url, 'name');
+      const identity = el('div', '', 'id');
+      identity.append(name, el('div', m.url, 'url'));
+      const who = el('div', '', 'who');
+      who.append(el('div', String(i + 1), 'rank'), identity);
+
+      const total = formatScore(m.score.total);
+      const ring = el('div', '', `score ${scoreTier(m.score.total)}`);
+      ring.style.setProperty('--pct', String(barPercent(m.score.total)));
+      ring.setAttribute('aria-label', `${t('colScore')}: ${total}`);
+      ring.append(el('span', total));
+
+      const head = el('div', '', 'card-head');
+      head.append(who, ring);
+      card.append(head);
+
+      const uptimeValue = m.uptime == null ? '—' : `${formatScore(m.uptime)}%`;
+      const uptimeTier = typeof m.uptime === 'number' ? scoreTier(m.uptime) : '';
+      card.append(meter(t('uptimeLabel'), uptimeValue, barPercent(m.uptime), uptimeTier));
+
+      const parts = el('div', '', 'parts');
+      for (const [part, labelKey] of PARTS) {
+        const value = m.score.parts[part];
+        const percent = partPercent(value, weights[part]);
+        parts.append(meter(t(labelKey), formatScore(value), percent, scoreTier(percent)));
+      }
+      card.append(parts);
+
+      const chips = el('div', '', 'chips');
+      if (!m.online) chips.append(el('span', t('offline'), 'chip fail'));
+      const summary = checkSummary(m.checks);
+      const tier = checkTier(summary.passed, summary.total);
+      if (tier) chips.append(el('span', t('checksPassed', summary), `chip ${tier}`));
+      if (chips.childElementCount) card.append(chips);
+
+      const meta = el('div', '', 'meta');
+      meta.append(
+        metaItem(t('latencyLabel'), m.latencyMs == null ? '—' : t('latencyMs', { latency: m.latencyMs })),
+        el('span', t('runsCount', { runs: m.history?.length ?? 0 })),
+        el('span', m.version || t('unknownVersion'), 'value'),
+      );
+      card.append(meta);
+
+      const names = Object.entries(m.checks);
+      if (names.length) {
+        const det = el('details', '', 'checks');
+        det.append(el('summary', t('checks')));
+        const ul = el('ul');
+        for (const [name, c] of names) {
+          ul.append(el('li', `${c.ok ? '✓' : '✗'} ${checkLabel(name)}${c.error ? ` (${c.error})` : ''}`, c.ok ? 'ok' : 'fail'));
+        }
+        det.append(ul);
+        card.append(det);
+      }
+      return card;
+    }
+
     function render() {
+      const list = document.getElementById('ranking');
       if (loadFailed) {
-        const tr = document.createElement('tr');
-        const td = el('td', t('loadError'));
-        td.colSpan = 7;
-        tr.append(td);
-        document.getElementById('ranking').replaceChildren(tr);
+        list.replaceChildren(el('li', t('loadError'), 'status error'));
         return;
       }
       if (!ranking) return;
@@ -85,30 +474,7 @@
         time: new Date(generatedAt).toLocaleString(lang === 'es' ? 'es-AR' : 'en-GB', { timeZone: 'America/Argentina/Buenos_Aires' }),
       });
       document.getElementById('weights').textContent = t('weights', weights);
-      document.getElementById('ranking').replaceChildren(...mints.map((m, i) => {
-        const tr = document.createElement('tr');
-        const mint = el('td');
-        mint.append(el('div', m.name || m.url), el('div', m.url, 'url'));
-        if (m.score.alerts.length) mint.append(el('div', t('fraud', { alerts: m.score.alerts.map(checkLabel).join(', ') }), 'alert'));
-        if (!m.online) mint.append(el('div', t('offline'), 'fail'));
-        const det = el('details');
-        det.append(el('summary', t('checks')));
-        const ul = el('ul');
-        for (const [name, c] of Object.entries(m.checks)) {
-          ul.append(el('li', (c.ok ? '✓ ' : '✗ ') + checkLabel(name) + (c.error ? ` (${c.error})` : ''), c.ok ? 'ok' : 'fail'));
-        }
-        ul.append(el('li', t('stats', {
-          latency: m.latencyMs ?? '-',
-          uptime: m.uptime ?? '-',
-          runs: m.history?.length ?? 0,
-          version: m.version || t('unknownVersion'),
-        })));
-        det.append(ul);
-        mint.append(det);
-        tr.append(el('td', String(i + 1), 'n'), mint, el('td', pts(m.score.total), 'n'),
-          ...['availability', 'nuts', 'keysets', 'info'].map((p) => el('td', pts(m.score.parts[p]), 'n opt')));
-        return tr;
-      }));
+      list.replaceChildren(...mints.map((m, i) => renderMint(m, i, weights)));
     }
 
     function setLang(next) {
