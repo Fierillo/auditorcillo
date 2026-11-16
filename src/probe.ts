@@ -3,7 +3,7 @@ import type { CheckResult, Observation } from './score.ts';
 
 /** The mint operations the auditor needs; src/cashu.ts implements them with cashu-ts. */
 export type MintPort = {
-  info(): Promise<{ name?: string; pubkey?: string; version?: string; description?: string; icon_url?: string; contact: Array<{ method: string; info: string }>; nuts: number[] }>;
+  info(): Promise<{ name?: string; pubkey?: string; version?: string; description?: string; icon_url?: string; website?: string; urls?: string[]; contact: Array<{ method: string; info: string }>; nuts: number[] }>;
   /** GET /v1/keys; `valid` = the id derives from the published keys (NUT-02). */
   keys(): Promise<Array<{ id: string; valid: boolean }>>;
   /** GET /v1/keysets */
@@ -50,6 +50,8 @@ export type ProbeResult = Observation & {
   error: string | null;
   /** NUT-06 icon, only set when it is a public https URL within the text cap. */
   iconUrl?: string;
+  /** Mint website: NUT-06 `website` or first safe `urls` entry, else the mint URL origin. */
+  websiteUrl?: string;
 };
 
 
@@ -76,14 +78,36 @@ export const MINT_TEXT_MAX = 200;
 export const MINT_ERROR_MAX = 500;
 const clip = (s: string, max: number) => (s.length <= max ? s : s.slice(0, max));
 
-/** Keeps a NUT-06 icon_url only if it is a public https URL no longer than other mint text. */
-export function mintIconUrl(value: unknown): string | undefined {
+/** A public https URL no longer than other mint text, or undefined. */
+export function publicHttpsUrl(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
   const url = value.trim();
   if (!url || url.length > MINT_TEXT_MAX) return undefined;
   try {
     assertMintUrl(url);
     return url;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Keeps a NUT-06 icon_url only if it is a public https URL no longer than other mint text. */
+export function mintIconUrl(value: unknown): string | undefined {
+  return publicHttpsUrl(value);
+}
+
+/** NUT-06 website, then the first safe entry in `urls`, then the mint URL's https origin. */
+export function mintWebsiteUrl(info: { website?: unknown; urls?: unknown } | null | undefined, mintUrl: string): string | undefined {
+  const direct = publicHttpsUrl(info?.website);
+  if (direct) return direct;
+  if (Array.isArray(info?.urls)) {
+    for (const value of info.urls) {
+      const url = publicHttpsUrl(value);
+      if (url) return url;
+    }
+  }
+  try {
+    return publicHttpsUrl(new URL(mintUrl).origin);
   } catch {
     return undefined;
   }
@@ -107,6 +131,8 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
     checks: {},
     error: null,
   };
+  const websiteUrl = mintWebsiteUrl(undefined, target.url);
+  if (websiteUrl) r.websiteUrl = websiteUrl;
   const timed = async <T>(read: () => Promise<T>, ms: number[]) => {
     const start = deps.now();
     const value = await read();
@@ -130,6 +156,8 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
   r.nuts = info.nuts;
   const iconUrl = mintIconUrl(info.icon_url);
   if (iconUrl) r.iconUrl = iconUrl;
+  const fromInfo = mintWebsiteUrl(info, target.url);
+  if (fromInfo) r.websiteUrl = fromInfo;
   r.info = {
     name: !!info.name,
     pubkey: !!info.pubkey,

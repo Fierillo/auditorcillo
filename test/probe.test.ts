@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { invoiceSats, mintIconUrl, MINT_ERROR_MAX, MINT_TEXT_MAX, probeMint, type LightningWallet, type MintPort, type ProbeDeps } from '../src/probe.ts';
+import { invoiceSats, mintIconUrl, mintWebsiteUrl, MINT_ERROR_MAX, MINT_TEXT_MAX, probeMint, type LightningWallet, type MintPort, type ProbeDeps } from '../src/probe.ts';
 
 function fakeClock() {
   let t = 1_800_000_000_000;
@@ -280,5 +280,58 @@ describe('probeMint icon_url', () => {
 
     const missing = await probeMint({ url: 'https://m', cycle: false }, deps(clock, honestPort(clock)));
     expect(missing.iconUrl).toBeUndefined();
+  });
+});
+
+describe('mintWebsiteUrl', () => {
+  it('prefers a safe NUT-06 website, then the first safe urls entry, then the mint origin', () => {
+    expect(mintWebsiteUrl({ website: 'https://wallet.example.com' }, 'https://mint.example.com/Bitcoin')).toBe(
+      'https://wallet.example.com',
+    );
+    expect(mintWebsiteUrl({ urls: ['http://abc.onion', 'https://front.example.com'] }, 'https://mint.example.com/Bitcoin')).toBe(
+      'https://front.example.com',
+    );
+    expect(mintWebsiteUrl({}, 'https://mint.example.com/Bitcoin')).toBe('https://mint.example.com');
+  });
+
+  it('omits unsafe website or url values and falls through, and omits when nothing is a public https URL', () => {
+    expect(
+      mintWebsiteUrl({ website: 'http://wallet.example.com', urls: ['https://app.example.com'] }, 'https://mint.example.com'),
+    ).toBe('https://app.example.com');
+    expect(mintWebsiteUrl({ website: 'javascript:alert(1)', urls: ['https://user:pass@x.example'] }, 'https://mint.example.com')).toBe(
+      'https://mint.example.com',
+    );
+    expect(mintWebsiteUrl({ website: 'https://127.0.0.1', urls: ['http://front.example.com'] }, 'not-a-url')).toBeUndefined();
+    expect(mintWebsiteUrl({}, '')).toBeUndefined();
+  });
+});
+
+describe('probeMint website', () => {
+  it('stores a safe website from NUT-06 and falls back to the mint origin', async () => {
+    const clock = fakeClock();
+    const site = 'https://wallet.example.com';
+    const fromSite = await probeMint(
+      { url: 'https://mint.example.com/Bitcoin', cycle: false },
+      deps(clock, honestPort(clock, { info: async () => ({ name: 'Test', contact: [], nuts: [4, 5], website: site }) })),
+    );
+    expect(fromSite.websiteUrl).toBe(site);
+
+    const fromUrls = await probeMint(
+      { url: 'https://mint.example.com/Bitcoin', cycle: false },
+      deps(
+        clock,
+        honestPort(clock, {
+          info: async () => ({ name: 'Test', contact: [], nuts: [4, 5], urls: ['http://abc.onion', 'https://front.example.com'] }),
+        }),
+      ),
+    );
+    expect(fromUrls.websiteUrl).toBe('https://front.example.com');
+
+    const fallback = await probeMint({ url: 'https://mint.example.com/Bitcoin', cycle: false }, deps(clock, honestPort(clock)));
+    expect(fallback.websiteUrl).toBe('https://mint.example.com');
+
+    const down = await probeMint({ url: 'https://mint.example.com/Bitcoin', cycle: false }, deps(clock, new Error('ECONNREFUSED')));
+    expect(down.online).toBe(false);
+    expect(down.websiteUrl).toBe('https://mint.example.com');
   });
 });

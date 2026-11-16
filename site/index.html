@@ -157,6 +157,7 @@
     .langs button:focus-visible,
     .faq summary:focus-visible,
     .faq-link:focus-visible,
+    .mint-site:focus-visible,
     .site-footer a:focus-visible,
     .checks summary:focus-visible,
     .search input:focus-visible,
@@ -207,7 +208,7 @@
       font-size: .88rem;
       flex: 1 1 12rem;
     }
-    .faq-link {
+    a.faq-link {
       color: inherit;
       text-decoration: underline dotted;
       text-underline-offset: .2em;
@@ -353,7 +354,6 @@
       background: #241f1a;
       border: 1px solid var(--line);
     }
-    .id { min-width: 0; }
     .name {
       font-weight: 600;
       font-size: 1.05rem;
@@ -365,6 +365,24 @@
       font-size: .8rem;
       word-break: break-all;
       margin-top: .15rem;
+    }
+    .mint { min-width: 0; flex: 1; }
+    .mint-site, .mint-plain {
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+      min-width: 0;
+      color: inherit;
+      text-decoration: none;
+      border-radius: 8px;
+    }
+    .mint-site:hover .name { color: var(--accent); }
+    .mint .url { padding-left: calc(2.5rem + .7rem); }
+    .ext {
+      margin-left: .2em;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: .75em;
     }
     .site-footer {
       margin: 2.5rem 0 0;
@@ -637,9 +655,9 @@
       matchesMint,
       mintInitials,
       normalizeQuery,
-      partPercent,
       openFaqTarget,
       parseLinkedText,
+      partPercent,
       scoreTier,
       toTen,
     } from './view.js';
@@ -782,10 +800,30 @@
         card.append(banner);
       }
 
-      const identity = el('div', '', 'id');
-      identity.append(el('div', m.name || m.url, 'name'), el('div', m.url, 'url'));
+      const nameText = m.name || m.url;
       const who = el('div', '', 'who');
-      who.append(el('div', String(i + 1), 'rank'), portrait(m), identity);
+      const mint = el('div', '', 'mint');
+      const portraitNode = portrait(m);
+      const name = el('div', nameText, 'name');
+      if (isSafeIconUrl(m.websiteUrl)) {
+        const site = document.createElement('a');
+        site.className = 'mint-site';
+        site.href = m.websiteUrl;
+        site.target = '_blank';
+        site.rel = 'noopener noreferrer';
+        site.setAttribute('aria-label', t('openMintSite', { name: nameText }));
+        const hint = el('span', '↗', 'ext');
+        hint.setAttribute('aria-hidden', 'true');
+        name.append(hint);
+        site.append(portraitNode, name);
+        mint.append(site);
+      } else {
+        const plain = el('div', '', 'mint-plain');
+        plain.append(portraitNode, name);
+        mint.append(plain);
+      }
+      mint.append(el('div', m.url, 'url'));
+      who.append(el('div', String(i + 1), 'rank'), mint);
 
       const total = displayTen(m.score.total, maxScore, true);
       const ring = el('div', '', `score ${scoreTier(m.score.total)}`);
