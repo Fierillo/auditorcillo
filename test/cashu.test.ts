@@ -1,0 +1,58 @@
+import { describe, expect, it } from 'vitest';
+import { announcedNuts, assertMintUrl } from '../src/cashu.ts';
+
+describe('announcedNuts', () => {
+  it('lists supported NUTs and the enabled mint/melt methods, ignoring disabled or unsupported ones', () => {
+    expect(
+      announcedNuts({
+        '4': { methods: [{ method: 'bolt11', unit: 'sat' }], disabled: false },
+        '5': { methods: [{ method: 'bolt11', unit: 'sat' }], disabled: true },
+        '7': { supported: true },
+        '8': { supported: false },
+        '17': { supported: [{ method: 'bolt11', unit: 'sat', commands: [] }] },
+        '15': {},
+        junk: { supported: true },
+      }),
+    ).toEqual([4, 7, 17]);
+  });
+});
+
+describe('assertMintUrl', () => {
+  it('accepts https public DNS names and public IP literals', () => {
+    expect(() => assertMintUrl('https://mint.example.com/Bitcoin')).not.toThrow();
+    expect(() => assertMintUrl('https://21mint.me')).not.toThrow();
+    expect(() => assertMintUrl('https://1.1.1.1')).not.toThrow();
+  });
+
+  it('rejects non-https schemes, credentials and private or reserved addresses', () => {
+    for (const url of [
+      'http://mint.example.com',
+      'file:///etc/passwd',
+      'ftp://mint.example.com',
+      'https://user:pass@mint.example.com',
+      'https://127.0.0.1',
+      'https://localhost',
+      'http://127.0.0.1:3391',
+      'https://10.0.0.1',
+      'https://192.168.1.8',
+      'https://172.16.0.1',
+      'https://169.254.169.254/latest/meta-data/',
+      'https://[::1]/',
+      'https://[fd00::1]/',
+      'https://[fe80::1]/',
+      'https://[::ffff:169.254.169.254]/',
+      'not-a-url',
+    ]) {
+      expect(() => assertMintUrl(url), url).toThrow(/mint URL/i);
+    }
+  });
+
+  it('allows loopback only with explicit allowLocal', () => {
+    expect(() => assertMintUrl('http://127.0.0.1:3391', { allowLocal: true })).not.toThrow();
+    expect(() => assertMintUrl('http://localhost:3391', { allowLocal: true })).not.toThrow();
+    expect(() => assertMintUrl('http://[::1]:3391', { allowLocal: true })).not.toThrow();
+    expect(() => assertMintUrl('https://127.0.0.1', { allowLocal: true })).not.toThrow();
+    expect(() => assertMintUrl('http://mint.example.com', { allowLocal: true })).toThrow(/mint URL/i);
+    expect(() => assertMintUrl('http://10.0.0.1', { allowLocal: true })).toThrow(/mint URL/i);
+  });
+});
