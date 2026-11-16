@@ -639,8 +639,8 @@
     </details>
   </section>
   <footer class="site-footer">
-    <p><a id="footer-block" href="https://mempool.space/block/000000000000000000020655834cd975ec2b84b30a0e9c0fc95c93fd189e8161" target="_blank" rel="noopener noreferrer">Block #976,083</a></p>
-    <p id="footer-credit"></p>
+    <p id="footer-block"><a href="https://github.com/Fierillo/auditorcillo" target="_blank" rel="noopener noreferrer">auditorcillo</a> was made in block <a href="https://mempool.space/block/000000000000000000020655834cd975ec2b84b30a0e9c0fc95c93fd189e8161" target="_blank" rel="noopener noreferrer">#976,083</a></p>
+    <p id="footer-credit">Made with 🧡 by <a href="https://github.com/Fierillo" target="_blank" rel="noopener noreferrer">Fierillo</a></p>
   </footer>
   </div>
   <script type="module">
@@ -681,6 +681,7 @@
     const CREDIT_HREFS = {
       project: { href: 'https://github.com/Fierillo/auditorcillo', external: true },
       author: { href: 'https://github.com/Fierillo', external: true },
+      block: { href: 'https://mempool.space/block/' + CREATION_BLOCK.hash, external: true },
     };
     const el = (tag, text, cls) => Object.assign(document.createElement(tag), { textContent: text ?? '', className: cls ?? '' });
 
@@ -731,11 +732,9 @@
       for (const btn of document.querySelectorAll('[data-lang]')) btn.setAttribute('aria-pressed', String(btn.dataset.lang === lang));
       const intro = document.querySelector('.tagline');
       if (intro) appendLinked(intro, t('intro'), FAQ_HREFS);
+      const height = CREATION_BLOCK.height.toLocaleString(lang === 'es' ? 'es-AR' : 'en-US');
       const block = document.getElementById('footer-block');
-      if (block) {
-        block.textContent = t('footerBlock', { height: CREATION_BLOCK.height.toLocaleString(lang === 'es' ? 'es-AR' : 'en-US') });
-        block.href = 'https://mempool.space/block/' + CREATION_BLOCK.hash;
-      }
+      if (block) appendLinked(block, t('footerBlock', { height }), CREDIT_HREFS);
       const credit = document.getElementById('footer-credit');
       if (credit) appendLinked(credit, t('footerCredit'), CREDIT_HREFS);
       fillScoreFaq();
