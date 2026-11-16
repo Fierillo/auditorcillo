@@ -90,27 +90,28 @@
     }
     .hero { margin: 0; }
     .brand { flex: 1 1 16rem; }
-    .title-row {
-      display: flex;
-      align-items: center;
-      gap: .7rem;
-    }
-    .mascot {
-      width: 4.6rem;
-      height: auto;
-      flex: 0 0 4.6rem;
-    }
-    .mascot-empty {
-      width: 4.4rem;
-      margin: 0 auto .35rem;
-      display: block;
-    }
     h1 {
       margin: 0;
-      font-size: 1.85rem;
+      font-size: clamp(2.4rem, 12vw, 4.5rem);
       font-weight: 700;
-      letter-spacing: -.03em;
-      line-height: 1.15;
+      letter-spacing: -.045em;
+      line-height: 1;
+      white-space: nowrap;
+      padding-bottom: .85em;
+    }
+    .mascot-o {
+      display: inline-block;
+      height: .82em;
+      width: .82em;
+      overflow: visible;
+      vertical-align: -.06em;
+      margin-left: -.02em;
+    }
+    .mascot-empty {
+      width: 5rem;
+      height: auto;
+      margin: 0 auto .7rem;
+      display: block;
     }
     .tagline {
       margin: .5rem 0 0;
@@ -476,8 +477,6 @@
     }
     @media (min-width: 40rem) {
       .page { padding: 1.5rem max(1.5rem, env(safe-area-inset-right, 0px)) max(3rem, env(safe-area-inset-bottom, 0px)) max(1.5rem, env(safe-area-inset-left, 0px)); }
-      h1 { font-size: 2.15rem; }
-      .mascot { width: 5.75rem; flex-basis: 5.75rem; }
       .parts { grid-template-columns: repeat(4, 1fr); }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -536,10 +535,11 @@
   <div class="page">
   <section class="hero">
     <div class="brand">
-      <div class="title-row">
-        <img class="mascot" src="mascot.svg" width="128" height="112" alt="">
-        <h1 data-i18n="heading">Auditorcillo</h1>
-      </div>
+      <h1 data-i18n-aria="heading">
+        <span aria-hidden="true">Auditorcill</span><svg class="mascot-o" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+          <use href="mascot.svg#figure"/>
+        </svg>
+      </h1>
       <p class="tagline" data-i18n="intro">Ranking of Cashu mints by observed behaviour, not by what they announce.</p>
     </div>
   </section>
@@ -767,10 +767,10 @@
       if (!shown.length) {
         const empty = el('li', '', 'status');
         const img = document.createElement('img');
-        img.className = 'mascot mascot-empty';
+        img.className = 'mascot-empty';
         img.src = 'mascot.svg';
-        img.width = 128;
-        img.height = 112;
+        img.width = 80;
+        img.height = 120;
         img.alt = '';
         empty.append(img, el('p', t('searchEmpty', { query: query.trim() })));
         list.replaceChildren(empty);
