@@ -1,0 +1,28 @@
+{
+  "name": "auditorcillo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Cashu mint auditor and public ranking",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.34.6",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "vitest run --exclude 'test/live/**'",
+    "test:live": "vitest run test/live",
+    "typecheck": "tsc --noEmit",
+    "rank": "node src/cli.ts mints.json site/ranking.json",
+    "demo": "node src/demo.ts"
+  },
+  "dependencies": {
+    "@cashu/cashu-ts": "4.13.1",
+    "nostr-tools": "2.26.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0"
+  }
+}
