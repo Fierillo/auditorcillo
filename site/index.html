@@ -157,6 +157,7 @@
     .langs button:focus-visible,
     .faq summary:focus-visible,
     .faq-link:focus-visible,
+    .site-footer a:focus-visible,
     .checks summary:focus-visible,
     .search input:focus-visible,
     .search-clear:focus-visible {
@@ -365,6 +366,21 @@
       word-break: break-all;
       margin-top: .15rem;
     }
+    .site-footer {
+      margin: 2.5rem 0 0;
+      padding: 1.25rem 0 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: .85rem;
+      text-align: center;
+    }
+    .site-footer p { margin: 0 0 .4rem; }
+    .site-footer p:last-child { margin-bottom: 0; }
+    .site-footer a {
+      color: var(--accent);
+      text-underline-offset: .15em;
+    }
+    .site-footer a:hover { color: var(--text); }
     .score {
       --pct: 0;
       display: grid;
@@ -604,6 +620,10 @@
       <p class="faq-a"><span data-i18n="faqSourceA">Yes. Auditorcillo is a public project under the MIT license.</span> <a href="https://github.com/Fierillo/auditorcillo" data-i18n="faqSourceLink">Source on GitHub</a>.</p>
     </details>
   </section>
+  <footer class="site-footer">
+    <p><a id="footer-block" href="https://mempool.space/block/000000000000000000020655834cd975ec2b84b30a0e9c0fc95c93fd189e8161" target="_blank" rel="noopener noreferrer">Block #976,083</a></p>
+    <p id="footer-credit"></p>
+  </footer>
   </div>
   <script type="module">
     import { MESSAGES, pickLanguage, translate } from './i18n.js';
@@ -625,6 +645,7 @@
     } from './view.js';
 
     const STORAGE_KEY = 'auditorcillo-lang';
+    const CREATION_BLOCK = { height: 976083, hash: '000000000000000000020655834cd975ec2b84b30a0e9c0fc95c93fd189e8161' };
     const PARTS = [
       ['availability', 'colAvailability'],
       ['nuts', 'colNuts'],
@@ -638,6 +659,10 @@
       'faq-update': '#faq-update',
       'faq-fraud': '#faq-fraud',
       'faq-source': '#faq-source',
+    };
+    const CREDIT_HREFS = {
+      project: { href: 'https://github.com/Fierillo/auditorcillo', external: true },
+      author: { href: 'https://github.com/Fierillo', external: true },
     };
     const el = (tag, text, cls) => Object.assign(document.createElement(tag), { textContent: text ?? '', className: cls ?? '' });
 
@@ -688,6 +713,13 @@
       for (const btn of document.querySelectorAll('[data-lang]')) btn.setAttribute('aria-pressed', String(btn.dataset.lang === lang));
       const intro = document.querySelector('.tagline');
       if (intro) appendLinked(intro, t('intro'), FAQ_HREFS);
+      const block = document.getElementById('footer-block');
+      if (block) {
+        block.textContent = t('footerBlock', { height: CREATION_BLOCK.height.toLocaleString(lang === 'es' ? 'es-AR' : 'en-US') });
+        block.href = 'https://mempool.space/block/' + CREATION_BLOCK.hash;
+      }
+      const credit = document.getElementById('footer-credit');
+      if (credit) appendLinked(credit, t('footerCredit'), CREDIT_HREFS);
       fillScoreFaq();
     }
 
