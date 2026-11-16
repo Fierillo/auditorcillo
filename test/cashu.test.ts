@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { assertMintAddresses } from '../src/url.ts';
 import { announcedNuts, assertMintUrl, cappedFetch, NUTS_MAX } from '../src/cashu.ts';
 
 describe('announcedNuts', () => {
@@ -112,5 +113,33 @@ describe('cappedFetch', () => {
     const res = await cappedFetch(big.inner, 1_000_000)('https://mint.example.com/v1/info');
     await expect(res.text()).rejects.toThrow(/exceeds 1000000 bytes/);
     expect(big.pulled()).toBeLessThan(2_000_000);
+  });
+});
+
+describe('assertMintAddresses', () => {
+  const resolves = (...addresses: string[]) => async () => addresses.map((address) => ({ address, family: address.includes(':') ? 6 : 4 }));
+
+  it('accepts a mint host whose every address is public', async () => {
+    await expect(assertMintAddresses('https://mint.example.com/Bitcoin', {}, resolves('1.1.1.1', '2606:4700:4700::1111'))).resolves.toBeUndefined();
+  });
+
+  it('refuses a mint host that resolves to any private, reserved or loopback address', async () => {
+    for (const [url, addresses] of [
+      ['https://169.254.169.254.nip.io', ['169.254.169.254']],
+      ['https://localtest.me', ['127.0.0.1']],
+      ['https://mixed.example.com', ['1.1.1.1', '10.0.0.1']],
+      ['https://mapped.example.com', ['::ffff:127.0.0.1']],
+      ['https://cgnat.example.com', ['100.64.0.1']],
+      ['https://empty.example.com', []],
+    ] as const) {
+      await expect(assertMintAddresses(url, {}, resolves(...addresses)), url).rejects.toThrow(/mint URL/);
+    }
+  });
+
+  it('allows loopback addresses only with allowLocal and asks the resolver for every address', async () => {
+    const lookup = vi.fn(resolves('127.0.0.1'));
+    await expect(assertMintAddresses('http://localhost:3391', { allowLocal: true }, lookup)).resolves.toBeUndefined();
+    expect(lookup).toHaveBeenCalledWith('localhost', { all: true });
+    await expect(assertMintAddresses('http://localhost:3391', { allowLocal: true }, resolves('10.0.0.1'))).rejects.toThrow(/mint URL/);
   });
 });

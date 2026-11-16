@@ -1,4 +1,5 @@
 // Shared URL checks for mint endpoints and mint-provided icon URLs (NUT-06).
+import { lookup as dnsLookup } from 'node:dns/promises';
 import { BlockList, isIP } from 'node:net';
 
 export type MintUrlOptions = { allowLocal?: boolean };
@@ -53,3 +54,17 @@ export function assertMintUrl(url: string, { allowLocal = false }: MintUrlOption
   if (isPrivateOrReserved(host)) throw new Error(`mint URL must not be a private or reserved address: ${parsed.origin}`);
 }
 
+export type Lookup = (host: string, options: { all: true }) => Promise<Array<{ address: string }>>;
+
+/** Resolves the mint host and throws unless every address is public (or loopback with `{ allowLocal: true }`),
+ * so a public name pointing at an internal address cannot be audited. */
+export async function assertMintAddresses(url: string, { allowLocal = false }: MintUrlOptions = {}, lookup: Lookup = dnsLookup): Promise<void> {
+  const { hostname, origin } = new URL(url);
+  const addresses = await lookup(hostname.replace(/^\[|\]$/g, ''), { all: true });
+  if (!addresses.length) throw new Error(`mint URL does not resolve: ${origin}`);
+  for (const { address } of addresses) {
+    if (isLoopback(address) ? !allowLocal : isPrivateOrReserved(address)) {
+      throw new Error(`mint URL resolves to a private or reserved address: ${origin}`);
+    }
+  }
+}

@@ -2,7 +2,7 @@
 import { randomBytes } from 'node:crypto';
 import { Amount, Keyset, Mint, Wallet, hasValidDleq, hashToCurve, type Proof } from '@cashu/cashu-ts';
 import type { MintPort } from './probe.ts';
-import { assertMintUrl, type MintUrlOptions } from './url.ts';
+import { assertMintAddresses, assertMintUrl, type MintUrlOptions } from './url.ts';
 
 type RawNut = { supported?: unknown; methods?: unknown[]; disabled?: boolean };
 
@@ -56,6 +56,7 @@ export function cashuPort(url: string, opts: MintUrlOptions = {}): MintPort {
 
   return {
     async info() {
+      await assertMintAddresses(url, opts); // info() is the first request of every probe
       const i = await mint.getInfo();
       return { ...i, nuts: announcedNuts(i.nuts) };
     },
