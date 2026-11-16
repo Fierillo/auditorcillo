@@ -6,6 +6,7 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#12100e">
   <title data-i18n="title">Auditorcillo · Cashu mint ranking</title>
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
   <style>
     :root {
       --bg: #12100e;
@@ -38,6 +39,17 @@
       min-height: 100vh;
     }
     ::selection { background: color-mix(in srgb, var(--accent) 40%, transparent); color: var(--text); }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
     header {
       display: flex;
       flex-wrap: wrap;
@@ -46,23 +58,23 @@
       gap: .75rem 1.25rem;
     }
     .brand { flex: 1 1 16rem; }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+    }
+    .logo {
+      width: 2.5rem;
+      height: 2.5rem;
+      flex: 0 0 2.5rem;
+      border-radius: 7px;
+    }
     h1 {
       margin: 0;
       font-size: 1.85rem;
       font-weight: 700;
       letter-spacing: -.03em;
       line-height: 1.15;
-    }
-    h1::before {
-      content: "";
-      display: inline-block;
-      width: .7em;
-      height: .7em;
-      margin-right: .45rem;
-      vertical-align: -.05em;
-      border-radius: 50%;
-      background: conic-gradient(from 210deg, #f0d78c, #c4891c, #f0d78c);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
     }
     .tagline {
       margin: .5rem 0 0;
@@ -72,36 +84,140 @@
     }
     .langs {
       display: inline-flex;
-      padding: .15rem;
       border: 1px solid var(--line);
       border-radius: 999px;
+      overflow: hidden;
       background: var(--bg-elev);
     }
     .langs button {
-      font: inherit;
-      font-size: .8rem;
-      font-weight: 600;
-      letter-spacing: .04em;
-      color: var(--muted);
-      background: transparent;
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 3.35rem;
+      min-height: 2.75rem;
+      padding: 0;
       border: 0;
-      border-radius: 999px;
-      padding: .45rem .75rem;
       cursor: pointer;
+      background: #111;
+      opacity: .42;
+      filter: grayscale(.2);
     }
     .langs button[aria-pressed="true"] {
-      color: var(--on-accent);
-      background: var(--accent);
+      opacity: 1;
+      filter: none;
+      box-shadow: inset 0 0 0 2px var(--accent);
+      z-index: 1;
     }
     .langs button:focus-visible,
-    .checks summary:focus-visible {
+    .score-help summary:focus-visible,
+    .checks summary:focus-visible,
+    .search input:focus-visible,
+    .search-clear:focus-visible {
       outline: 2px solid var(--focus);
       outline-offset: 2px;
+      z-index: 2;
+    }
+    .langs .flag {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .langs span {
+      position: relative;
+      z-index: 1;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, .85);
+      background: rgba(0, 0, 0, .42);
+      border-radius: 999px;
+      padding: .12rem .38rem;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: .5rem;
+      margin: 1.2rem 0 .75rem;
     }
     .updated {
-      margin: 1.2rem 0 .85rem;
+      margin: 0;
       color: var(--muted);
       font-size: .88rem;
+      flex: 1 1 12rem;
+    }
+    .score-help[open] {
+      flex: 1 0 100%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .score-help summary {
+      list-style: none;
+      cursor: pointer;
+      width: 2.25rem;
+      height: 2.25rem;
+      min-width: 2.25rem;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: var(--muted);
+      background: var(--bg-elev);
+    }
+    .score-help summary::-webkit-details-marker,
+    .score-help summary::marker { display: none; content: ""; }
+    .score-help[open] summary {
+      color: var(--on-accent);
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .help-panel {
+      flex: 1 0 100%;
+      margin: .6rem 0 0;
+      padding: .85rem 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-size: .88rem;
+      line-height: 1.45;
+      max-width: 46rem;
+    }
+    .search {
+      display: flex;
+      gap: .45rem;
+      margin: 0 0 .85rem;
+      align-items: center;
+    }
+    .search-field { flex: 1; min-width: 0; }
+    .search input {
+      width: 100%;
+      font: inherit;
+      color: var(--text);
+      background: var(--bg-elev);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: .65rem 1rem;
+      min-height: 2.75rem;
+    }
+    .search-clear {
+      font: inherit;
+      font-size: 1.2rem;
+      line-height: 1;
+      width: 2.75rem;
+      height: 2.75rem;
+      flex: 0 0 2.75rem;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background: var(--bg-elev);
+      color: var(--text);
+      cursor: pointer;
     }
     .ranking {
       list-style: none;
@@ -158,6 +274,24 @@
     .card.place-1 .rank { color: var(--accent); }
     .card.place-2 .rank { color: #c8c8d0; }
     .card.place-3 .rank { color: #d09a6a; }
+    .portrait, .avatar {
+      width: 2.5rem;
+      height: 2.5rem;
+      flex: 0 0 2.5rem;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--track);
+    }
+    .avatar {
+      display: grid;
+      place-items: center;
+      font-size: .8rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+      color: var(--accent);
+      background: #241f1a;
+      border: 1px solid var(--line);
+    }
     .id { min-width: 0; }
     .name {
       font-weight: 600;
@@ -297,13 +431,6 @@
     }
     .checks li.ok { color: var(--high); }
     .checks li.fail { color: var(--low); }
-    .footnote {
-      margin: 1.4rem 0 2rem;
-      color: var(--muted);
-      font-size: .85rem;
-      line-height: 1.45;
-      max-width: 46rem;
-    }
     @media (hover: hover) {
       .card { transition: border-color .15s ease, box-shadow .15s ease; }
       .card:hover { border-color: color-mix(in srgb, var(--accent) 30%, var(--line)); }
@@ -311,6 +438,7 @@
     @media (min-width: 40rem) {
       body { padding: 2rem 1.5rem 3rem; }
       h1 { font-size: 2.15rem; }
+      .logo { width: 3rem; height: 3rem; flex-basis: 3rem; }
       .parts { grid-template-columns: repeat(4, 1fr); }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -324,19 +452,67 @@
 <body>
   <header>
     <div class="brand">
-      <h1 data-i18n="heading">Auditorcillo</h1>
+      <div class="title-row">
+        <img class="logo" src="logo.svg" width="48" height="48" alt="">
+        <h1 data-i18n="heading">Auditorcillo</h1>
+      </div>
       <p class="tagline" data-i18n="intro">Ranking of Cashu mints by observed behaviour, not by what they announce.</p>
     </div>
     <nav class="langs" data-i18n-aria="language">
-      <button type="button" data-lang="en">EN</button>
-      <button type="button" data-lang="es">ES</button>
+      <button type="button" data-lang="en" data-i18n-aria="langEn">
+        <svg class="flag" viewBox="0 0 60 40" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid slice">
+          <rect width="60" height="40" fill="#fff"/>
+          <g fill="#B22234">
+            <rect y="0" width="60" height="3.08"/>
+            <rect y="6.15" width="60" height="3.08"/>
+            <rect y="12.31" width="60" height="3.08"/>
+            <rect y="18.46" width="60" height="3.08"/>
+            <rect y="24.62" width="60" height="3.08"/>
+            <rect y="30.77" width="60" height="3.08"/>
+            <rect y="36.92" width="60" height="3.08"/>
+          </g>
+          <rect width="24" height="21.54" fill="#3C3B6E"/>
+          <g fill="#fff">
+            <circle cx="3" cy="2.7" r="0.75"/><circle cx="7.5" cy="2.7" r="0.75"/><circle cx="12" cy="2.7" r="0.75"/><circle cx="16.5" cy="2.7" r="0.75"/><circle cx="21" cy="2.7" r="0.75"/>
+            <circle cx="5.25" cy="5.7" r="0.75"/><circle cx="9.75" cy="5.7" r="0.75"/><circle cx="14.25" cy="5.7" r="0.75"/><circle cx="18.75" cy="5.7" r="0.75"/>
+            <circle cx="3" cy="8.7" r="0.75"/><circle cx="7.5" cy="8.7" r="0.75"/><circle cx="12" cy="8.7" r="0.75"/><circle cx="16.5" cy="8.7" r="0.75"/><circle cx="21" cy="8.7" r="0.75"/>
+            <circle cx="5.25" cy="11.7" r="0.75"/><circle cx="9.75" cy="11.7" r="0.75"/><circle cx="14.25" cy="11.7" r="0.75"/><circle cx="18.75" cy="11.7" r="0.75"/>
+            <circle cx="3" cy="14.7" r="0.75"/><circle cx="7.5" cy="14.7" r="0.75"/><circle cx="12" cy="14.7" r="0.75"/><circle cx="16.5" cy="14.7" r="0.75"/><circle cx="21" cy="14.7" r="0.75"/>
+            <circle cx="5.25" cy="17.7" r="0.75"/><circle cx="9.75" cy="17.7" r="0.75"/><circle cx="14.25" cy="17.7" r="0.75"/><circle cx="18.75" cy="17.7" r="0.75"/>
+          </g>
+        </svg>
+        <span>EN</span>
+      </button>
+      <button type="button" data-lang="es" data-i18n-aria="langEs">
+        <svg class="flag" viewBox="0 0 60 40" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid slice">
+          <rect width="60" height="40" fill="#74ACDF"/>
+          <rect y="13.33" width="60" height="13.34" fill="#fff"/>
+          <circle cx="30" cy="20" r="3.1" fill="#F6B40E"/>
+          <g fill="none" stroke="#F6B40E" stroke-width="1.15" stroke-linecap="round">
+            <path d="M30 14.4v-1.9M30 25.6v1.9M24.4 20h-1.9M37.5 20h1.9M25.6 15.6l-1.3-1.3M36.7 25.7l1.3 1.3M36.7 15.6l1.3-1.3M25.6 25.7l-1.3 1.3"/>
+          </g>
+        </svg>
+        <span>ES</span>
+      </button>
     </nav>
   </header>
-  <p id="updated" class="updated"></p>
+  <div class="toolbar">
+    <p id="updated" class="updated"></p>
+    <details class="score-help" hidden>
+      <summary data-i18n-aria="scoreHelpLabel">?</summary>
+      <p id="score-help" class="help-panel"></p>
+    </details>
+  </div>
+  <div class="search">
+    <div class="search-field">
+      <label class="sr-only" for="search" data-i18n="searchLabel">Search mints</label>
+      <input id="search" type="search" autocomplete="off" autocapitalize="none" spellcheck="false" data-i18n-placeholder="searchPlaceholder" placeholder="Search by name or URL">
+    </div>
+    <button type="button" class="search-clear" id="search-clear" hidden data-i18n-aria="searchClear">×</button>
+  </div>
   <ol id="ranking" class="ranking">
     <li class="status" data-i18n="loading">Loading…</li>
   </ol>
-  <p id="weights" class="footnote"></p>
   <script type="module">
     import { MESSAGES, pickLanguage, translate } from './i18n.js';
     import {
@@ -345,8 +521,13 @@
       checkTier,
       formatScore,
       isHighlightedRank,
+      isSafeIconUrl,
+      matchesMint,
+      mintInitials,
+      normalizeQuery,
       partPercent,
       scoreTier,
+      toTen,
     } from './view.js';
 
     const STORAGE_KEY = 'auditorcillo-lang';
@@ -361,6 +542,7 @@
     let lang = pickLanguage(localStorage.getItem(STORAGE_KEY), navigator.language);
     let ranking = null;
     let loadFailed = false;
+    let query = '';
 
     const t = (key, vars) => translate(MESSAGES, lang, key, vars);
     const checkLabel = (name) => {
@@ -373,9 +555,33 @@
       document.documentElement.lang = lang;
       document.title = t('title');
       for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
-      const nav = document.querySelector('[data-i18n-aria]');
-      if (nav) nav.setAttribute('aria-label', t(nav.dataset.i18nAria));
+      for (const node of document.querySelectorAll('[data-i18n-aria]')) node.setAttribute('aria-label', t(node.dataset.i18nAria));
+      for (const node of document.querySelectorAll('[data-i18n-placeholder]')) node.setAttribute('placeholder', t(node.dataset.i18nPlaceholder));
       for (const btn of document.querySelectorAll('[data-lang]')) btn.setAttribute('aria-pressed', String(btn.dataset.lang === lang));
+    }
+
+    function displayTen(value, max, compact) {
+      const n = toTen(value, max);
+      if (n == null) return '—';
+      const score = formatScore(n);
+      return compact ? score : t('scoreOutOfTen', { score });
+    }
+
+    function portrait(m) {
+      const fallback = el('div', mintInitials(m.name, m.url), 'avatar');
+      fallback.setAttribute('aria-hidden', 'true');
+      if (!isSafeIconUrl(m.iconUrl)) return fallback;
+      const img = document.createElement('img');
+      img.className = 'portrait';
+      img.referrerPolicy = 'no-referrer';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.width = 40;
+      img.height = 40;
+      img.alt = m.name || m.url || '';
+      img.addEventListener('error', () => img.replaceWith(fallback));
+      img.src = m.iconUrl;
+      return img;
     }
 
     function meter(label, valueText, percent, tier) {
@@ -391,12 +597,12 @@
     }
 
     function metaItem(label, value) {
-      const item = el('span', '', 'meta-item');
+      const item = el('span');
       item.append(el('span', label), document.createTextNode(' '), el('span', value, 'value'));
       return item;
     }
 
-    function renderMint(m, i, weights) {
+    function renderMint(m, i, weights, maxScore) {
       const card = el('li', '', 'card');
       if (isHighlightedRank(i, m.score.total)) card.classList.add('is-top', `place-${i + 1}`);
       if (m.score.alerts.length) card.classList.add('has-fraud');
@@ -405,16 +611,15 @@
         card.append(el('div', t('fraud', { alerts: m.score.alerts.map(checkLabel).join(', ') }), 'banner'));
       }
 
-      const name = el('div', m.name || m.url, 'name');
       const identity = el('div', '', 'id');
-      identity.append(name, el('div', m.url, 'url'));
+      identity.append(el('div', m.name || m.url, 'name'), el('div', m.url, 'url'));
       const who = el('div', '', 'who');
-      who.append(el('div', String(i + 1), 'rank'), identity);
+      who.append(el('div', String(i + 1), 'rank'), portrait(m), identity);
 
-      const total = formatScore(m.score.total);
+      const total = displayTen(m.score.total, maxScore, true);
       const ring = el('div', '', `score ${scoreTier(m.score.total)}`);
       ring.style.setProperty('--pct', String(barPercent(m.score.total)));
-      ring.setAttribute('aria-label', `${t('colScore')}: ${total}`);
+      ring.setAttribute('aria-label', `${t('colScore')}: ${displayTen(m.score.total, maxScore)}`);
       ring.append(el('span', total));
 
       const head = el('div', '', 'card-head');
@@ -429,7 +634,7 @@
       for (const [part, labelKey] of PARTS) {
         const value = m.score.parts[part];
         const percent = partPercent(value, weights[part]);
-        parts.append(meter(t(labelKey), formatScore(value), percent, scoreTier(percent)));
+        parts.append(meter(t(labelKey), displayTen(value, weights[part]), percent, scoreTier(percent)));
       }
       card.append(parts);
 
@@ -464,17 +669,32 @@
 
     function render() {
       const list = document.getElementById('ranking');
+      const help = document.getElementById('score-help');
+      const helpBox = help.parentElement;
+      const clear = document.getElementById('search-clear');
+      clear.hidden = normalizeQuery(query) === '';
+
       if (loadFailed) {
+        helpBox.hidden = true;
         list.replaceChildren(el('li', t('loadError'), 'status error'));
         return;
       }
       if (!ranking) return;
       const { generatedAt, weights, mints } = ranking;
+      const maxScore = Object.values(weights).reduce((a, b) => a + b, 0);
       document.getElementById('updated').textContent = t('updated', {
         time: new Date(generatedAt).toLocaleString(lang === 'es' ? 'es-AR' : 'en-GB', { timeZone: 'America/Argentina/Buenos_Aires' }),
       });
-      document.getElementById('weights').textContent = t('weights', weights);
-      list.replaceChildren(...mints.map((m, i) => renderMint(m, i, weights)));
+      help.textContent = t('scoreHelpBody', weights);
+      helpBox.hidden = false;
+      const shown = mints
+        .map((m, i) => [m, i])
+        .filter(([m]) => matchesMint(m.name, m.url, query));
+      if (!shown.length) {
+        list.replaceChildren(el('li', t('searchEmpty', { query: query.trim() }), 'status'));
+        return;
+      }
+      list.replaceChildren(...shown.map(([m, i]) => renderMint(m, i, weights, maxScore)));
     }
 
     function setLang(next) {
@@ -487,6 +707,15 @@
     for (const btn of document.querySelectorAll('[data-lang]')) {
       btn.addEventListener('click', () => setLang(btn.dataset.lang));
     }
+
+    const search = document.getElementById('search');
+    search.addEventListener('input', () => { query = search.value; render(); });
+    document.getElementById('search-clear').addEventListener('click', () => {
+      query = '';
+      search.value = '';
+      render();
+      search.focus();
+    });
 
     applyStatic();
     fetch('ranking.json', { cache: 'no-store' })

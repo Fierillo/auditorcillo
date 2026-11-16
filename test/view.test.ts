@@ -5,8 +5,13 @@ import {
   checkTier,
   formatScore,
   isHighlightedRank,
+  isSafeIconUrl,
+  matchesMint,
+  mintInitials,
+  normalizeQuery,
   partPercent,
   scoreTier,
+  toTen,
 } from '../site/view.js';
 
 describe('scoreTier', () => {
@@ -100,5 +105,74 @@ describe('checkTier', () => {
     expect(checkTier(3, 5)).toBe('mid');
     expect(checkTier(0, 5)).toBe('fail');
     expect(checkTier(0, 0)).toBe(null);
+  });
+});
+
+describe('toTen', () => {
+  it('converts a 0–max score to a 0–10 scale with one decimal', () => {
+    expect(toTen(100, 100)).toBe(10);
+    expect(toTen(98, 100)).toBe(9.8);
+    expect(toTen(50, 100)).toBe(5);
+    expect(toTen(40, 40)).toBe(10);
+    expect(toTen(20, 40)).toBe(5);
+    expect(toTen(8, 10)).toBe(8);
+  });
+
+  it('keeps a true zero as 0 and clamps a positive value that would round below 1 up to 1', () => {
+    expect(toTen(0, 100)).toBe(0);
+    expect(toTen(0, 40)).toBe(0);
+    expect(toTen(4, 100)).toBe(1);
+    expect(toTen(9, 100)).toBe(1);
+    expect(toTen(10, 100)).toBe(1);
+  });
+
+  it('caps values above the maximum at 10 and treats missing input as no score', () => {
+    expect(toTen(150, 100)).toBe(10);
+    expect(toTen(null, 100)).toBe(null);
+    expect(toTen(50, 0)).toBe(null);
+    expect(toTen(50, null)).toBe(null);
+    expect(toTen(Number.NaN, 100)).toBe(null);
+  });
+});
+
+describe('normalizeQuery', () => {
+  it('trims, lowercases and strips accents so a search can match loosely', () => {
+    expect(normalizeQuery('  CúBA  ')).toBe('cuba');
+    expect(normalizeQuery('Minibits')).toBe('minibits');
+    expect(normalizeQuery('')).toBe('');
+    expect(normalizeQuery(null)).toBe('');
+  });
+});
+
+describe('matchesMint', () => {
+  it('matches a mint when the query is empty or appears in the name or URL', () => {
+    expect(matchesMint('Mint Cuba Bitcoin', 'https://mint.cubabitcoin.org', '')).toBe(true);
+    expect(matchesMint('Mint Cuba Bitcoin', 'https://mint.cubabitcoin.org', '  ')).toBe(true);
+    expect(matchesMint('Mint Cuba Bitcoin', 'https://mint.cubabitcoin.org', 'cúba')).toBe(true);
+    expect(matchesMint('Minibits mint', 'https://mint.minibits.cash/Bitcoin', 'MINIBITS.CASH')).toBe(true);
+    expect(matchesMint('21Mint', 'https://21mint.me', 'coinos')).toBe(false);
+  });
+});
+
+describe('mintInitials', () => {
+  it('takes two letters from the name, or from the URL host when the name is missing', () => {
+    expect(mintInitials('Mint Cuba Bitcoin', 'https://mint.cubabitcoin.org')).toBe('MC');
+    expect(mintInitials('21Mint', 'https://21mint.me')).toBe('21');
+    expect(mintInitials('macadamia Mint', 'https://mint.macadamia.cash')).toBe('MM');
+    expect(mintInitials(null, 'https://mint.minibits.cash/Bitcoin')).toBe('MI');
+    expect(mintInitials('  ', 'https://www.21mint.me')).toBe('21');
+    expect(mintInitials(null, 'not a url')).toBe('?');
+  });
+});
+
+describe('isSafeIconUrl', () => {
+  it('allows only https URLs without credentials, so the page can set img.src safely', () => {
+    expect(isSafeIconUrl('https://cdn.example.com/icon.png')).toBe(true);
+    expect(isSafeIconUrl('http://cdn.example.com/icon.png')).toBe(false);
+    expect(isSafeIconUrl('https://user:pass@cdn.example.com/icon.png')).toBe(false);
+    expect(isSafeIconUrl('javascript:alert(1)')).toBe(false);
+    expect(isSafeIconUrl('not a url')).toBe(false);
+    expect(isSafeIconUrl(undefined)).toBe(false);
+    expect(isSafeIconUrl('')).toBe(false);
   });
 });

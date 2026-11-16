@@ -36,3 +36,56 @@ export function checkTier(passed, total) {
   if (passed === 0) return 'fail';
   return 'mid';
 }
+
+export function toTen(value, max) {
+  if (typeof value !== 'number' || typeof max !== 'number' || !Number.isFinite(value) || !Number.isFinite(max) || max <= 0) {
+    return null;
+  }
+  if (value <= 0) return 0;
+  const scaled = Math.round((value / max) * 100) / 10;
+  return Math.min(10, Math.max(1, scaled));
+}
+
+export function normalizeQuery(value) {
+  if (typeof value !== 'string') return '';
+  return value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim();
+}
+
+export function matchesMint(name, url, query) {
+  const q = normalizeQuery(query);
+  if (!q) return true;
+  return normalizeQuery(name ?? '').includes(q) || normalizeQuery(url ?? '').includes(q);
+}
+
+function hostLabel(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '').split('.')[0] ?? '';
+  } catch {
+    return '';
+  }
+}
+
+export function mintInitials(name, url) {
+  const source = typeof name === 'string' && name.trim() ? name.trim() : hostLabel(url);
+  const words = source
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  if (words[0]?.length >= 2) return words[0].slice(0, 2).toUpperCase();
+  if (words[0]) return words[0][0].toUpperCase();
+  return '?';
+}
+
+export function isSafeIconUrl(value) {
+  if (typeof value !== 'string' || !value) return false;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'https:' && !parsed.username && !parsed.password;
+  } catch {
+    return false;
+  }
+}

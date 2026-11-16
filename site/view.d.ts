@@ -10,3 +10,12 @@ export function checkSummary(
 ): { passed: number; total: number };
 export function isHighlightedRank(index: number, total: number): boolean;
 export function checkTier(passed: number, total: number): 'ok' | 'mid' | 'fail' | null;
+export function toTen(value: number | null | undefined, max: number | null | undefined): number | null;
+export function normalizeQuery(value: string | null | undefined): string;
+export function matchesMint(
+  name: string | null | undefined,
+  url: string | null | undefined,
+  query: string | null | undefined,
+): boolean;
+export function mintInitials(name: string | null | undefined, url: string | null | undefined): string;
+export function isSafeIconUrl(value: string | null | undefined): boolean;
