@@ -89,3 +89,34 @@ export function isSafeIconUrl(value) {
     return false;
   }
 }
+
+const LINK_TOKEN = /\[([a-z][a-z0-9-]*)\](.+?)\[\/\1\]/g;
+
+/** Splits i18n strings with [id]label[/id] tokens into text and link parts. */
+export function parseLinkedText(text) {
+  if (typeof text !== 'string' || !text) return [];
+  const parts = [];
+  let last = 0;
+  LINK_TOKEN.lastIndex = 0;
+  let match;
+  while ((match = LINK_TOKEN.exec(text))) {
+    if (match.index > last) parts.push({ type: 'text', value: text.slice(last, match.index) });
+    parts.push({ type: 'link', id: match[1], value: match[2] });
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) parts.push({ type: 'text', value: text.slice(last) });
+  return parts;
+}
+
+/** Opens the <details> that a #faq- hash points at. Returns whether one was opened. */
+export function openFaqTarget(hash, root) {
+  if (typeof hash !== 'string' || !hash.startsWith('#faq-')) return false;
+  const id = hash.slice(1);
+  if (!/^[A-Za-z][\w-]*$/.test(id)) return false;
+  const node = root?.getElementById?.(id);
+  if (!node) return false;
+  const details = node.tagName === 'DETAILS' ? node : node.closest?.('details');
+  if (!details) return false;
+  details.open = true;
+  return true;
+}

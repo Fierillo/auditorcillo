@@ -9,6 +9,8 @@ import {
   matchesMint,
   mintInitials,
   normalizeQuery,
+  openFaqTarget,
+  parseLinkedText,
   partPercent,
   scoreTier,
   toTen,
@@ -174,5 +176,56 @@ describe('isSafeIconUrl', () => {
     expect(isSafeIconUrl('not a url')).toBe(false);
     expect(isSafeIconUrl(undefined)).toBe(false);
     expect(isSafeIconUrl('')).toBe(false);
+  });
+});
+
+describe('parseLinkedText', () => {
+  it('returns a single text part when there are no link tokens', () => {
+    expect(parseLinkedText('Ranking of Cashu mints.')).toEqual([{ type: 'text', value: 'Ranking of Cashu mints.' }]);
+    expect(parseLinkedText('')).toEqual([]);
+    expect(parseLinkedText(undefined)).toEqual([]);
+  });
+
+  it('splits explicit [id]label[/id] tokens into text and link parts', () => {
+    expect(parseLinkedText('Ranking of [faq-cashu]Cashu[/faq-cashu] [faq-cashu]mints[/faq-cashu].')).toEqual([
+      { type: 'text', value: 'Ranking of ' },
+      { type: 'link', id: 'faq-cashu', value: 'Cashu' },
+      { type: 'text', value: ' ' },
+      { type: 'link', id: 'faq-cashu', value: 'mints' },
+      { type: 'text', value: '.' },
+    ]);
+  });
+
+  it('keeps malformed markup and HTML as plain text', () => {
+    expect(parseLinkedText('[faq-cashu]Cashu')).toEqual([{ type: 'text', value: '[faq-cashu]Cashu' }]);
+    expect(parseLinkedText('[faq-cashu]Cashu[/faq-score]')).toEqual([{ type: 'text', value: '[faq-cashu]Cashu[/faq-score]' }]);
+    expect(parseLinkedText('<a href="https://evil">x</a>')).toEqual([{ type: 'text', value: '<a href="https://evil">x</a>' }]);
+  });
+});
+
+describe('openFaqTarget', () => {
+  it('opens the details element whose id matches a #faq- hash', () => {
+    const details = { tagName: 'DETAILS', open: false };
+    const root = { getElementById: (id: string) => (id === 'faq-score' ? details : null) };
+    expect(openFaqTarget('#faq-score', root)).toBe(true);
+    expect(details.open).toBe(true);
+  });
+
+  it('opens the enclosing details when the hash points at a child', () => {
+    const details = { tagName: 'DETAILS', open: false };
+    const child = { tagName: 'P', closest: (sel: string) => (sel === 'details' ? details : null) };
+    const root = { getElementById: (id: string) => (id === 'faq-score-a' ? child : null) };
+    expect(openFaqTarget('#faq-score-a', root)).toBe(true);
+    expect(details.open).toBe(true);
+  });
+
+  it('ignores hashes that are not a faq target', () => {
+    const details = { tagName: 'DETAILS', open: false };
+    const root = { getElementById: (id: string) => (id === 'faq' ? { tagName: 'SECTION' } : id === 'faq-score' ? details : null) };
+    expect(openFaqTarget('#faq', root)).toBe(false);
+    expect(openFaqTarget('#top', root)).toBe(false);
+    expect(openFaqTarget('', root)).toBe(false);
+    expect(openFaqTarget('#faq-score', {})).toBe(false);
+    expect(details.open).toBe(false);
   });
 });

@@ -207,16 +207,21 @@
       flex: 1 1 12rem;
     }
     .faq-link {
+      color: inherit;
+      text-decoration: underline dotted;
+      text-underline-offset: .2em;
+      text-decoration-thickness: from-font;
+    }
+    a.faq-link:hover { color: var(--accent); }
+    .toolbar .faq-link {
       color: var(--muted);
       font-size: .85rem;
-      text-underline-offset: .2em;
     }
-    .faq-link:hover { color: var(--accent); }
     .faq {
       margin: 2.4rem 0 1rem;
       scroll-margin-top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px) + .4rem);
     }
-    #faq-score {
+    .faq details {
       scroll-margin-top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px) + .4rem);
     }
     .faq h2 {
@@ -555,7 +560,7 @@
           <use href="logo.svg#figure"/>
         </svg>
       </h1>
-      <p class="tagline" data-i18n="intro">Ranking of Cashu mints by observed behaviour, not by what they announce.</p>
+      <p class="tagline">Ranking of Cashu mints by observed behaviour, not by what they announce.</p>
     </div>
   </section>
   <div class="toolbar">
@@ -574,27 +579,27 @@
   </ol>
   <section class="faq" id="faq" aria-labelledby="faq-heading">
     <h2 id="faq-heading" data-i18n="faqHeading">FAQ</h2>
-    <details id="faq-score" open>
-      <summary data-i18n="faqScoreQ">How is the score calculated?</summary>
-      <p id="faq-score-a" class="faq-a"></p>
-    </details>
-    <details>
+    <details id="faq-cashu">
       <summary data-i18n="faqCashuQ">What is Cashu, and what is a mint?</summary>
       <p class="faq-a" data-i18n="faqCashuA">Cashu is an ecash protocol. A mint is a server that issues and redeems Cashu tokens. Auditorcillo ranks public mints by what it observes when it probes them, not by what they announce.</p>
     </details>
-    <details>
+    <details id="faq-checks">
       <summary data-i18n="faqChecksQ">What does Auditorcillo check?</summary>
       <p class="faq-a" data-i18n="faqChecksA">On every run it checks that keyset IDs derive from the published keys and that active keysets publish keys (NUT-02), and that the mint can create a mint quote (NUT-04) and a melt quote (NUT-05). If the mint announces NUT-07, it also checks token state. A full cycle — issuing tokens, DLEQ proofs, swaps, rejecting a spent token, paying a Lightning invoice and marking tokens as spent — runs on local FakeWallet mints, and on real mints only when a wallet is configured.</p>
     </details>
-    <details>
+    <details id="faq-score">
+      <summary data-i18n="faqScoreQ">How is the score calculated?</summary>
+      <p id="faq-score-a" class="faq-a"></p>
+    </details>
+    <details id="faq-update">
       <summary data-i18n="faqUpdateQ">How often is the ranking updated?</summary>
       <p class="faq-a" data-i18n="faqUpdateA">A scheduled GitHub Action probes the mint list about every 3 hours and publishes a new ranking.json.</p>
     </details>
-    <details>
+    <details id="faq-fraud">
       <summary data-i18n="faqFraudQ">What does “possible fraud” mean?</summary>
       <p class="faq-a" data-i18n="faqFraudA">A mint is flagged and its score is set to 0 if it accepts an already spent token, or if its keyset IDs do not derive from its published keys.</p>
     </details>
-    <details>
+    <details id="faq-source">
       <summary data-i18n="faqSourceQ">Is the code open?</summary>
       <p class="faq-a"><span data-i18n="faqSourceA">Yes. Auditorcillo is a public project under the MIT license.</span> <a href="https://github.com/Fierillo/auditorcillo" data-i18n="faqSourceLink">Source on GitHub</a>.</p>
     </details>
@@ -613,6 +618,8 @@
       mintInitials,
       normalizeQuery,
       partPercent,
+      openFaqTarget,
+      parseLinkedText,
       scoreTier,
       toTen,
     } from './view.js';
@@ -624,7 +631,41 @@
       ['keysets', 'colKeysets'],
       ['info', 'colInfo'],
     ];
+    const FAQ_HREFS = {
+      'faq-score': '#faq-score',
+      'faq-cashu': '#faq-cashu',
+      'faq-checks': '#faq-checks',
+      'faq-update': '#faq-update',
+      'faq-fraud': '#faq-fraud',
+      'faq-source': '#faq-source',
+    };
     const el = (tag, text, cls) => Object.assign(document.createElement(tag), { textContent: text ?? '', className: cls ?? '' });
+
+    function appendLinked(node, text, hrefs) {
+      node.replaceChildren();
+      for (const part of parseLinkedText(text)) {
+        const href = part.type === 'link' ? hrefs[part.id] : null;
+        const url = typeof href === 'string' ? href : href?.href;
+        if (part.type === 'link' && url) {
+          const a = document.createElement('a');
+          a.className = hrefs === FAQ_HREFS || (typeof href === 'string' && href.startsWith('#')) ? 'faq-link' : '';
+          a.href = url;
+          a.textContent = part.value;
+          if (href && href.external) {
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+          }
+          node.append(a);
+        } else {
+          node.append(document.createTextNode(part.value));
+        }
+      }
+      return node;
+    }
+
+    function revealFaqHash(hash = location.hash) {
+      openFaqTarget(hash, document);
+    }
 
     let lang = pickLanguage(localStorage.getItem(STORAGE_KEY), navigator.language);
     let ranking = null;
@@ -645,6 +686,8 @@
       for (const node of document.querySelectorAll('[data-i18n-aria]')) node.setAttribute('aria-label', t(node.dataset.i18nAria));
       for (const node of document.querySelectorAll('[data-i18n-placeholder]')) node.setAttribute('placeholder', t(node.dataset.i18nPlaceholder));
       for (const btn of document.querySelectorAll('[data-lang]')) btn.setAttribute('aria-pressed', String(btn.dataset.lang === lang));
+      const intro = document.querySelector('.tagline');
+      if (intro) appendLinked(intro, t('intro'), FAQ_HREFS);
       fillScoreFaq();
     }
 
@@ -680,7 +723,8 @@
     function meter(label, valueText, percent, tier) {
       const wrap = el('div', '', 'meter');
       const lab = el('div', '', 'meter-label');
-      lab.append(el('span', label), el('span', valueText, 'value'));
+      const name = label instanceof Node ? label : el('span', label);
+      lab.append(name, el('span', valueText, 'value'));
       const track = el('div', '', 'track');
       const fill = el('div', '', tier ? `fill ${tier}` : 'fill');
       fill.style.width = `${percent}%`;
@@ -701,7 +745,9 @@
       if (m.score.alerts.length) card.classList.add('has-fraud');
 
       if (m.score.alerts.length) {
-        card.append(el('div', t('fraud', { alerts: m.score.alerts.map(checkLabel).join(', ') }), 'banner'));
+        const banner = el('div', '', 'banner');
+        appendLinked(banner, t('fraud', { alerts: m.score.alerts.map(checkLabel).join(', ') }), FAQ_HREFS);
+        card.append(banner);
       }
 
       const identity = el('div', '', 'id');
@@ -721,13 +767,13 @@
 
       const uptimeValue = m.uptime == null ? '—' : `${formatScore(m.uptime)}%`;
       const uptimeTier = typeof m.uptime === 'number' ? scoreTier(m.uptime) : '';
-      card.append(meter(t('uptimeLabel'), uptimeValue, barPercent(m.uptime), uptimeTier));
+      card.append(meter(appendLinked(el('span'), t('uptimeLabel'), FAQ_HREFS), uptimeValue, barPercent(m.uptime), uptimeTier));
 
       const parts = el('div', '', 'parts');
       for (const [part, labelKey] of PARTS) {
         const value = m.score.parts[part];
         const percent = partPercent(value, weights[part]);
-        parts.append(meter(t(labelKey), displayTen(value, weights[part]), percent, scoreTier(percent)));
+        parts.append(meter(appendLinked(el('span'), t(labelKey), FAQ_HREFS), displayTen(value, weights[part]), percent, scoreTier(percent)));
       }
       card.append(parts);
 
@@ -735,7 +781,11 @@
       if (!m.online) chips.append(el('span', t('offline'), 'chip fail'));
       const summary = checkSummary(m.checks);
       const tier = checkTier(summary.passed, summary.total);
-      if (tier) chips.append(el('span', t('checksPassed', summary), `chip ${tier}`));
+      if (tier) {
+        const chip = el('span', '', `chip ${tier}`);
+        appendLinked(chip, t('checksPassed', summary), FAQ_HREFS);
+        chips.append(chip);
+      }
       if (chips.childElementCount) card.append(chips);
 
       const meta = el('div', '', 'meta');
@@ -814,7 +864,15 @@
       search.focus();
     });
 
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const link = target.closest('a[href^="#faq-"]');
+      if (link) revealFaqHash(link.hash || link.getAttribute('href'));
+    });
+    window.addEventListener('hashchange', () => revealFaqHash());
     applyStatic();
+    revealFaqHash();
     fetch('ranking.json', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => { ranking = data; render(); })

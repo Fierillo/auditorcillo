@@ -19,3 +19,8 @@ export function matchesMint(
 ): boolean;
 export function mintInitials(name: string | null | undefined, url: string | null | undefined): string;
 export function isSafeIconUrl(value: string | null | undefined): boolean;
+export type LinkedTextPart =
+  | { type: 'text'; value: string }
+  | { type: 'link'; id: string; value: string };
+export function parseLinkedText(text: string | null | undefined): LinkedTextPart[];
+export function openFaqTarget(hash: string, root: { getElementById?: (id: string) => { tagName: string; closest?: (selector: string) => { open: boolean } | null } | null }): boolean;
