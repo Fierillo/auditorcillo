@@ -14,6 +14,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          # The write token stays out of .git/config, so the steps that handle mint data never see it.
+          persist-credentials: false
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
@@ -26,8 +29,15 @@ jobs:
           # Optional: with a Nostr Wallet Connect secret the paid cycle also runs on real mints (spends a few sats).
           NWC_URL: ${{ secrets.NWC_URL }}
       - name: Commit ranking
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add site/ranking.json
-          git diff --cached --quiet || { git commit -m 'chore: update mint ranking' && git push; }
+          git diff --cached --quiet || {
+            git commit -m 'chore: update mint ranking'
+            auth=$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)
+            echo "::add-mask::$auth"
+            git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $auth" push origin "HEAD:$GITHUB_REF_NAME"
+          }
