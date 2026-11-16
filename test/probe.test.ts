@@ -335,3 +335,28 @@ describe('probeMint website', () => {
     expect(down.websiteUrl).toBe('https://mint.example.com');
   });
 });
+
+describe('probeMint with malformed /v1/info', () => {
+  it('keeps name and version only when they are strings and contacts only when they are well-formed', async () => {
+    const clock = fakeClock();
+    for (const info of [
+      { name: 5, version: {}, contact: 'x', nuts: [4, 5] },
+      { name: ['n'], version: 1, contact: [null, 3, 'npub', { info: 7 }], nuts: [4, 5] },
+      { nuts: [4, 5] },
+    ]) {
+      const port = honestPort(clock, { info: async () => info as never });
+      const r = await probeMint({ url: 'https://m', cycle: false }, deps(clock, port));
+      expect(r, JSON.stringify(info)).toMatchObject({ online: true, name: null, version: null, error: null });
+      expect(r.info.contact).toBe(false);
+    }
+    const mixed = honestPort(clock, { info: async () => ({ name: 'ok', contact: [null, { method: 'nostr', info: 'npub' }], nuts: [4, 5] }) as never });
+    expect((await probeMint({ url: 'https://m', cycle: false }, deps(clock, mixed))).info.contact).toBe(true);
+  });
+
+  it('reports a mint whose port cannot even be built as failed instead of throwing', async () => {
+    const clock = fakeClock();
+    const broken: ProbeDeps = { ...deps(clock, honestPort(clock)), port: () => { throw new Error('invalid mint URL: x'); } };
+    const r = await probeMint({ url: 'x', cycle: false }, broken);
+    expect(r).toMatchObject({ url: 'x', online: false, error: 'invalid mint URL: x' });
+  });
+});

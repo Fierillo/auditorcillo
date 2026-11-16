@@ -44,6 +44,26 @@ describe('audit', () => {
     expect(out.mints.find((m) => m.url === 'https://new')?.uptime).toBe(100);
   });
 
+  it('keeps ranking the other mints when one mint answers garbage', async () => {
+    const now = { t: 0 };
+    const garbage = { ...reachable(10, now), info: async () => ({ name: 5, version: {}, contact: 'x', nuts: [4, 5] }) } as unknown as MintPort;
+    const ports: Record<string, MintPort> = { 'https://good': reachable(10, now), 'https://garbage': garbage };
+    const deps: ProbeDeps = {
+      port: (url) => {
+        if (!(url in ports)) throw new Error(`invalid mint URL: ${url}`);
+        return ports[url];
+      },
+      now: () => now.t,
+      sleep: async () => {},
+      amount: 8,
+      payTimeoutMs: 1,
+    };
+    const out = await audit(['https://good', 'https://garbage', 'not-a-url'].map((url) => ({ url, cycle: false })), deps);
+    expect(out.mints.map((m) => m.url).sort()).toEqual(['https://garbage', 'https://good', 'not-a-url']);
+    expect(out.mints.find((m) => m.url === 'not-a-url')).toMatchObject({ online: false, error: expect.stringMatching(/invalid mint URL/) });
+    expect(out.mints.find((m) => m.url === 'https://garbage')).toMatchObject({ online: true, name: null, version: null });
+  });
+
   it('refuses to serialize a ranking larger than the size cap', () => {
     const huge = { generatedAt: 't', weights: SCORE.weights, mints: [{ error: 'x'.repeat(RANKING_MAX_BYTES) }] };
     expect(() => rankingJson(huge as never)).toThrow(/ranking\.json is \d+ bytes, exceeds /);

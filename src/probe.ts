@@ -3,7 +3,8 @@ import type { CheckResult, Observation } from './score.ts';
 
 /** The mint operations the auditor needs; src/cashu.ts implements them with cashu-ts. */
 export type MintPort = {
-  info(): Promise<{ name?: string; pubkey?: string; version?: string; description?: string; icon_url?: string; website?: string; urls?: string[]; contact: Array<{ method: string; info: string }>; nuts: number[] }>;
+  /** NUT-06 fields come straight from the mint and are untrusted; only `nuts` is already parsed. */
+  info(): Promise<{ name?: unknown; pubkey?: unknown; version?: unknown; description?: unknown; icon_url?: unknown; website?: unknown; urls?: unknown; contact?: unknown; nuts: number[] }>;
   /** GET /v1/keys; `valid` = the id derives from the published keys (NUT-02). */
   keys(): Promise<Array<{ id: string; valid: boolean }>>;
   /** GET /v1/keysets */
@@ -77,6 +78,10 @@ export function invoiceSats(invoice: string): number | null {
 export const MINT_TEXT_MAX = 200;
 export const MINT_ERROR_MAX = 500;
 const clip = (s: string, max: number) => (s.length <= max ? s : s.slice(0, max));
+const mintText = (value: unknown) => (typeof value === 'string' ? clip(value, MINT_TEXT_MAX) : null);
+/** NUT-06 contact: a list of `{ method, info }`; anything else counts as no contact. */
+const hasContact = (contact: unknown) =>
+  Array.isArray(contact) && contact.some((c) => typeof c === 'object' && c !== null && typeof c.info === 'string' && c.info !== '');
 
 /** A public https URL no longer than other mint text, or undefined. */
 export function publicHttpsUrl(value: unknown): string | undefined {
@@ -118,7 +123,6 @@ const MANDATORY_NUTS = [1, 2, 3, 4, 5, 6];
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<ProbeResult> {
-  const port = deps.port(target.url);
   const r: ProbeResult = {
     url: target.url,
     name: null,
@@ -140,8 +144,10 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
     return value;
   };
 
+  let port: MintPort;
   let reads;
   try {
+    port = deps.port(target.url);
     const ms: number[] = [];
     reads = { info: await timed(port.info, ms), keys: await timed(port.keys, ms), keysets: await timed(port.keysets, ms) };
     r.latencyMs = ms.sort((a, b) => a - b)[1];
@@ -151,8 +157,8 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
     return r;
   }
   const { info, keys, keysets } = reads;
-  r.name = info.name == null ? null : clip(info.name, MINT_TEXT_MAX);
-  r.version = info.version == null ? null : clip(info.version, MINT_TEXT_MAX);
+  r.name = mintText(info.name);
+  r.version = mintText(info.version);
   r.nuts = info.nuts;
   const iconUrl = mintIconUrl(info.icon_url);
   if (iconUrl) r.iconUrl = iconUrl;
@@ -163,7 +169,7 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
     pubkey: !!info.pubkey,
     version: !!info.version,
     description: !!info.description,
-    contact: info.contact.some((c) => !!c.info),
+    contact: hasContact(info.contact),
   };
 
   const announced = (nut: number) => MANDATORY_NUTS.includes(nut) || info.nuts.includes(nut);

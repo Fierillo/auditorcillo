@@ -31,7 +31,7 @@ export function cashuPort(url: string, opts: MintUrlOptions = {}): MintPort {
   return {
     async info() {
       const i = await mint.getInfo();
-      return { ...i, contact: i.contact ?? [], nuts: announcedNuts(i.nuts as Record<string, RawNut>) };
+      return { ...i, nuts: announcedNuts(i.nuts as Record<string, RawNut>) };
     },
     async keys() {
       const { keysets } = await mint.getKeys();
