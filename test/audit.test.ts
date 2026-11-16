@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { audit, rankingJson, RANKING_MAX_BYTES } from '../src/audit.ts';
+import { describe, expect, it, vi } from 'vitest';
+import { audit, parsePrevious, rankingJson, RANKING_MAX_BYTES, writeAtomic } from '../src/audit.ts';
 import type { MintPort, ProbeDeps } from '../src/probe.ts';
 import { SCORE } from '../src/score.ts';
 
@@ -67,5 +67,29 @@ describe('audit', () => {
   it('refuses to serialize a ranking larger than the size cap', () => {
     const huge = { generatedAt: 't', weights: SCORE.weights, mints: [{ error: 'x'.repeat(RANKING_MAX_BYTES) }] };
     expect(() => rankingJson(huge as never)).toThrow(/ranking\.json is \d+ bytes, exceeds /);
+  });
+});
+
+describe('parsePrevious', () => {
+  it('turns an unreadable or unexpected previous ranking into an empty one', () => {
+    for (const text of ['', '{', 'null', '5', '[]', '{}', '{"mints":5}', '{"mints":"x"}']) expect(parsePrevious(text), text).toEqual({ mints: [] });
+  });
+
+  it('keeps only mints with a string url and only boolean history entries', () => {
+    const text = JSON.stringify({ mints: [null, 5, { url: 3 }, { url: 'https://a', history: [true, 'x', false, null, 1] }, { url: 'https://b', history: 'x' }] });
+    expect(parsePrevious(text)).toEqual({ mints: [{ url: 'https://a', history: [true, false] }, { url: 'https://b', history: [] }] });
+  });
+});
+
+describe('writeAtomic', () => {
+  it('writes a temporary file next to the target and renames it over the target', async () => {
+    const calls: string[] = [];
+    const fs = {
+      writeFile: vi.fn(async (path: string) => void calls.push(`write ${path}`)),
+      rename: vi.fn(async (from: string, to: string) => void calls.push(`rename ${from} ${to}`)),
+    };
+    await writeAtomic('site/ranking.json', '{}\n', fs);
+    expect(calls).toEqual(['write site/ranking.json.tmp', 'rename site/ranking.json.tmp site/ranking.json']);
+    expect(fs.writeFile).toHaveBeenCalledWith('site/ranking.json.tmp', '{}\n');
   });
 });
