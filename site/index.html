@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="title">Auditorcillo · Cashu mint ranking</title>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; margin: 0 auto; padding: 1rem; max-width: 60rem; color: #222; background: #fafafa; }
+    header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+    h1 { margin: 0; }
+    .langs { display: flex; gap: .3rem; }
+    .langs button { font: inherit; cursor: pointer; }
+    .langs button[aria-pressed="true"] { font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { padding: .4rem .5rem; border-bottom: 1px solid #ddd; text-align: left; vertical-align: top; }
+    td.n { text-align: right; font-variant-numeric: tabular-nums; }
+    .url { color: #666; font-size: .85em; word-break: break-all; }
+    .alert { color: #b00020; font-weight: bold; }
+    .ok { color: #1b7f3b; } .fail { color: #b00020; }
+    details ul { margin: .3rem 0; padding-left: 1.2rem; font-size: .9em; }
+    @media (max-width: 40rem) { .opt { display: none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 data-i18n="heading">Auditorcillo</h1>
+    <nav class="langs" data-i18n-aria="language">
+      <button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="es">ES</button>
+    </nav>
+  </header>
+  <p><span data-i18n="intro">Ranking of Cashu mints by observed behaviour, not by what they announce.</span> <span id="updated"></span></p>
+  <table>
+    <thead><tr>
+      <th data-i18n="colRank">#</th>
+      <th data-i18n="colMint">Mint</th>
+      <th data-i18n="colScore">Score</th>
+      <th class="opt" data-i18n="colAvailability">Availability</th>
+      <th class="opt" data-i18n="colNuts">NUTs</th>
+      <th class="opt" data-i18n="colKeysets">Keysets</th>
+      <th class="opt" data-i18n="colInfo">Info</th>
+    </tr></thead>
+    <tbody id="ranking"><tr><td colspan="7" data-i18n="loading">Loading…</td></tr></tbody>
+  </table>
+  <p id="weights"></p>
+  <script type="module">
+    import { MESSAGES, pickLanguage, translate } from './i18n.js';
+
+    const STORAGE_KEY = 'auditorcillo-lang';
+    const el = (tag, text, cls) => Object.assign(document.createElement(tag), { textContent: text ?? '', className: cls ?? '' });
+    const pts = (v) => (Math.round(v * 10) / 10).toString();
+
+    let lang = pickLanguage(localStorage.getItem(STORAGE_KEY), navigator.language);
+    let ranking = null;
+    let loadFailed = false;
+
+    const t = (key, vars) => translate(MESSAGES, lang, key, vars);
+    const checkLabel = (name) => {
+      const key = 'check_' + name;
+      const label = t(key);
+      return label === key ? name : label;
+    };
+
+    function applyStatic() {
+      document.documentElement.lang = lang;
+      document.title = t('title');
+      for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
+      const nav = document.querySelector('[data-i18n-aria]');
+      if (nav) nav.setAttribute('aria-label', t(nav.dataset.i18nAria));
+      for (const btn of document.querySelectorAll('[data-lang]')) btn.setAttribute('aria-pressed', String(btn.dataset.lang === lang));
+    }
+
+    function render() {
+      if (loadFailed) {
+        const tr = document.createElement('tr');
+        const td = el('td', t('loadError'));
+        td.colSpan = 7;
+        tr.append(td);
+        document.getElementById('ranking').replaceChildren(tr);
+        return;
+      }
+      if (!ranking) return;
+      const { generatedAt, weights, mints } = ranking;
+      document.getElementById('updated').textContent = t('updated', {
+        time: new Date(generatedAt).toLocaleString(lang === 'es' ? 'es-AR' : 'en-GB', { timeZone: 'America/Argentina/Buenos_Aires' }),
+      });
+      document.getElementById('weights').textContent = t('weights', weights);
+      document.getElementById('ranking').replaceChildren(...mints.map((m, i) => {
+        const tr = document.createElement('tr');
+        const mint = el('td');
+        mint.append(el('div', m.name || m.url), el('div', m.url, 'url'));
+        if (m.score.alerts.length) mint.append(el('div', t('fraud', { alerts: m.score.alerts.map(checkLabel).join(', ') }), 'alert'));
+        if (!m.online) mint.append(el('div', t('offline'), 'fail'));
+        const det = el('details');
+        det.append(el('summary', t('checks')));
+        const ul = el('ul');
+        for (const [name, c] of Object.entries(m.checks)) {
+          ul.append(el('li', (c.ok ? '✓ ' : '✗ ') + checkLabel(name) + (c.error ? ` (${c.error})` : ''), c.ok ? 'ok' : 'fail'));
+        }
+        ul.append(el('li', t('stats', {
+          latency: m.latencyMs ?? '-',
+          uptime: m.uptime ?? '-',
+          runs: m.history?.length ?? 0,
+          version: m.version || t('unknownVersion'),
+        })));
+        det.append(ul);
+        mint.append(det);
+        tr.append(el('td', String(i + 1), 'n'), mint, el('td', pts(m.score.total), 'n'),
+          ...['availability', 'nuts', 'keysets', 'info'].map((p) => el('td', pts(m.score.parts[p]), 'n opt')));
+        return tr;
+      }));
+    }
+
+    function setLang(next) {
+      lang = next;
+      localStorage.setItem(STORAGE_KEY, lang);
+      applyStatic();
+      render();
+    }
+
+    for (const btn of document.querySelectorAll('[data-lang]')) {
+      btn.addEventListener('click', () => setLang(btn.dataset.lang));
+    }
+
+    applyStatic();
+    fetch('ranking.json', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((data) => { ranking = data; render(); })
+      .catch(() => { loadFailed = true; render(); });
+  </script>
+</body>
+</html>
