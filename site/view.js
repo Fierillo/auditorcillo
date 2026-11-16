@@ -108,7 +108,7 @@ export function parseLinkedText(text) {
   return parts;
 }
 
-/** Opens the <details> that a #faq- hash points at. Returns whether one was opened. */
+/** Opens the <details> that a #faq- hash points at and closes the rest. Returns whether one was opened. */
 export function openFaqTarget(hash, root) {
   if (typeof hash !== 'string' || !hash.startsWith('#faq-')) return false;
   const id = hash.slice(1);
@@ -117,6 +117,9 @@ export function openFaqTarget(hash, root) {
   if (!node) return false;
   const details = node.tagName === 'DETAILS' ? node : node.closest?.('details');
   if (!details) return false;
+  for (const other of root.querySelectorAll?.('details') ?? []) {
+    if (other !== details) other.open = false;
+  }
   details.open = true;
   return true;
 }

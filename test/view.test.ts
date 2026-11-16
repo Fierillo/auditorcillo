@@ -219,6 +219,18 @@ describe('openFaqTarget', () => {
     expect(details.open).toBe(true);
   });
 
+  it('closes every other open details so only the target stays expanded', () => {
+    const target = { tagName: 'DETAILS', open: false };
+    const other = { tagName: 'DETAILS', open: true };
+    const root = {
+      getElementById: (id: string) => (id === 'faq-score' ? target : null),
+      querySelectorAll: (sel: string) => (sel === 'details' ? [other, target] : []),
+    };
+    expect(openFaqTarget('#faq-score', root)).toBe(true);
+    expect(target.open).toBe(true);
+    expect(other.open).toBe(false);
+  });
+
   it('ignores hashes that are not a faq target', () => {
     const details = { tagName: 'DETAILS', open: false };
     const root = { getElementById: (id: string) => (id === 'faq' ? { tagName: 'SECTION' } : id === 'faq-score' ? details : null) };
