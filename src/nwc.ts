@@ -14,10 +14,22 @@ export type NwcRelay = {
 
 type Options = { connect?: (url: string) => Promise<NwcRelay>; timeoutMs?: number };
 
+const HEX32 = /^[0-9a-f]{64}$/i;
+
+/** Parses the NWC connection string; any failure is a fixed message, because the string holds the wallet secret. */
+function parseNwcUrl(uri: string) {
+  try {
+    const { pubkey: walletPubkey, relays, secret } = nip47.parseConnectionString(uri);
+    if (!HEX32.test(walletPubkey) || !HEX32.test(secret) || !relays.length) throw new Error();
+    const key = Uint8Array.from(Buffer.from(secret, 'hex'));
+    return { walletPubkey, relays, key, appPubkey: getPublicKey(key) };
+  } catch {
+    throw new Error('invalid NWC_URL');
+  }
+}
+
 export function nwcWallet(uri: string, { connect = (url) => Relay.connect(url), timeoutMs = 60_000 }: Options = {}): LightningWallet {
-  const { pubkey: walletPubkey, relays, secret } = nip47.parseConnectionString(uri);
-  const key = Uint8Array.from(Buffer.from(secret, 'hex'));
-  const appPubkey = getPublicKey(key);
+  const { walletPubkey, relays, key, appPubkey } = parseNwcUrl(uri);
   let relay: Promise<NwcRelay> | undefined;
 
   async function request<T>(method: string, params: Record<string, unknown>): Promise<T> {

@@ -53,4 +53,20 @@ describe('nwcWallet (NIP-47)', () => {
     const w = walletRelay(() => null);
     await expect(nwcWallet(w.uri, { connect: async () => w.relay, timeoutMs: 20 }).payInvoice('lnbc8')).rejects.toThrow(/no answer/);
   });
+
+  it('rejects a malformed NWC_URL without echoing it, since it holds the wallet secret', () => {
+    const secret = 'deadbeef'.repeat(8);
+    for (const uri of [`nostr+walletconnect://not a pubkey?secret=${secret}`, `nostr+walletconnect://${'a'.repeat(64)}?secret=${secret}`, `garbage ${secret}`, `nostr+walletconnect://${'a'.repeat(64)}?relay=wss://r.test&secret=zz${secret}`]) {
+      let error: unknown;
+      try {
+        nwcWallet(uri);
+      } catch (e) {
+        error = e;
+      }
+      expect(error, uri).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe('invalid NWC_URL');
+      expect(String((error as Error).stack)).not.toContain(secret);
+      expect((error as Error).cause).toBeUndefined();
+    }
+  });
 });
