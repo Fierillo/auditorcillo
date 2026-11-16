@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { invoiceSats, MINT_ERROR_MAX, MINT_TEXT_MAX, probeMint, type LightningWallet, type MintPort, type ProbeDeps } from '../src/probe.ts';
+import { invoiceSats, mintIconUrl, MINT_ERROR_MAX, MINT_TEXT_MAX, probeMint, type LightningWallet, type MintPort, type ProbeDeps } from '../src/probe.ts';
 
 function fakeClock() {
   let t = 1_800_000_000_000;
@@ -236,5 +236,49 @@ describe('invoiceSats', () => {
     expect(invoiceSats('not-an-invoice')).toBeNull();
     expect(invoiceSats('lnbc80x1')).toBeNull();
     expect(invoiceSats('lnbc1p')).toBeNull();
+  });
+});
+
+describe('mintIconUrl', () => {
+  it('accepts a public https URL within the mint text cap', () => {
+    expect(mintIconUrl('https://cdn.example.com/icon.png')).toBe('https://cdn.example.com/icon.png');
+    expect(mintIconUrl('https://mint.example.com/Bitcoin/icon.svg')).toBe('https://mint.example.com/Bitcoin/icon.svg');
+    expect(mintIconUrl(`https://cdn.example.com/${'a'.repeat(200 - 'https://cdn.example.com/'.length)}`)).toMatch(/^https:\/\/cdn\.example\.com\/a+$/);
+  });
+
+  it('omits anything that is not a public https URL, or that exceeds the text cap', () => {
+    const long = `https://cdn.example.com/${'a'.repeat(200)}`;
+    expect(long.length).toBeGreaterThan(MINT_TEXT_MAX);
+    expect(mintIconUrl(long)).toBeUndefined();
+    expect(mintIconUrl('http://cdn.example.com/icon.png')).toBeUndefined();
+    expect(mintIconUrl('https://127.0.0.1/icon.png')).toBeUndefined();
+    expect(mintIconUrl('http://localhost/icon.png')).toBeUndefined();
+    expect(mintIconUrl('https://10.0.0.1/icon.png')).toBeUndefined();
+    expect(mintIconUrl('https://user:pass@cdn.example.com/icon.png')).toBeUndefined();
+    expect(mintIconUrl('javascript:alert(1)')).toBeUndefined();
+    expect(mintIconUrl('not a url')).toBeUndefined();
+    expect(mintIconUrl(undefined)).toBeUndefined();
+    expect(mintIconUrl(null)).toBeUndefined();
+  });
+});
+
+describe('probeMint icon_url', () => {
+  it('stores a safe NUT-06 icon_url and omits an unsafe one', async () => {
+    const clock = fakeClock();
+    const safe = 'https://cdn.example.com/mint.png';
+    const ok = await probeMint(
+      { url: 'https://m', cycle: false },
+      deps(clock, honestPort(clock, { info: async () => ({ name: 'Test', contact: [], nuts: [4, 5], icon_url: safe }) })),
+    );
+    expect(ok.iconUrl).toBe(safe);
+
+    const bad = await probeMint(
+      { url: 'https://m', cycle: false },
+      deps(clock, honestPort(clock, { info: async () => ({ name: 'Test', contact: [], nuts: [4, 5], icon_url: 'http://cdn.example.com/mint.png' }) })),
+    );
+    expect(bad.iconUrl).toBeUndefined();
+
+    const missing = await probeMint({ url: 'https://m', cycle: false }, deps(clock, honestPort(clock)));
+    expect(missing.iconUrl).toBeUndefined();
   });
 });

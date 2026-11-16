@@ -1,8 +1,9 @@
+import { assertMintUrl } from './url.ts';
 import type { CheckResult, Observation } from './score.ts';
 
 /** The mint operations the auditor needs; src/cashu.ts implements them with cashu-ts. */
 export type MintPort = {
-  info(): Promise<{ name?: string; pubkey?: string; version?: string; description?: string; contact: Array<{ method: string; info: string }>; nuts: number[] }>;
+  info(): Promise<{ name?: string; pubkey?: string; version?: string; description?: string; icon_url?: string; contact: Array<{ method: string; info: string }>; nuts: number[] }>;
   /** GET /v1/keys; `valid` = the id derives from the published keys (NUT-02). */
   keys(): Promise<Array<{ id: string; valid: boolean }>>;
   /** GET /v1/keysets */
@@ -47,6 +48,8 @@ export type ProbeResult = Observation & {
   checkedAt: string;
   checks: Record<string, CheckResult & { error?: string }>;
   error: string | null;
+  /** NUT-06 icon, only set when it is a public https URL within the text cap. */
+  iconUrl?: string;
 };
 
 
@@ -72,6 +75,19 @@ export function invoiceSats(invoice: string): number | null {
 export const MINT_TEXT_MAX = 200;
 export const MINT_ERROR_MAX = 500;
 const clip = (s: string, max: number) => (s.length <= max ? s : s.slice(0, max));
+
+/** Keeps a NUT-06 icon_url only if it is a public https URL no longer than other mint text. */
+export function mintIconUrl(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const url = value.trim();
+  if (!url || url.length > MINT_TEXT_MAX) return undefined;
+  try {
+    assertMintUrl(url);
+    return url;
+  } catch {
+    return undefined;
+  }
+}
 
 const POLL_MS = 500;
 const MANDATORY_NUTS = [1, 2, 3, 4, 5, 6];
@@ -112,6 +128,8 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
   r.name = info.name == null ? null : clip(info.name, MINT_TEXT_MAX);
   r.version = info.version == null ? null : clip(info.version, MINT_TEXT_MAX);
   r.nuts = info.nuts;
+  const iconUrl = mintIconUrl(info.icon_url);
+  if (iconUrl) r.iconUrl = iconUrl;
   r.info = {
     name: !!info.name,
     pubkey: !!info.pubkey,
