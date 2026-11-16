@@ -24,3 +24,8 @@ export type LinkedTextPart =
   | { type: 'link'; id: string; value: string };
 export function parseLinkedText(text: string | null | undefined): LinkedTextPart[];
 export function openFaqTarget(hash: string, root: { getElementById?: (id: string) => { tagName: string; closest?: (selector: string) => { open: boolean } | null } | null; querySelectorAll?: (selector: string) => Iterable<{ open: boolean }> }): boolean;
+export function headerMorph(
+  scrollY: number,
+  big: { top: number; left: number; width: number },
+  small: { top: number; left: number; width: number },
+): { x: number; scale: number; docked: boolean };

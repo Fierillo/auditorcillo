@@ -123,3 +123,20 @@ export function openFaqTarget(hash, root) {
   details.open = true;
   return true;
 }
+
+/**
+ * Scroll-driven shrink of the hero title into the header mark.
+ * `big` is the title's document position and size, `small` the header mark's viewport position and size.
+ * Returns the horizontal shift and scale (origin top-left) and whether the header mark should take over.
+ */
+export function headerMorph(scrollY, big, small) {
+  const sizes = [scrollY, big.top, big.left, big.width, small.top, small.left, small.width];
+  if (!sizes.every(Number.isFinite) || big.width <= 0 || small.width <= 0) return { x: 0, scale: 1, docked: false };
+  const distance = big.top - small.top;
+  const progress = distance <= 0 ? 1 : Math.min(1, Math.max(0, scrollY) / distance);
+  return {
+    x: (small.left - big.left) * progress,
+    scale: 1 + (small.width / big.width - 1) * progress,
+    docked: progress >= 1,
+  };
+}

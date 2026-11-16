@@ -4,6 +4,7 @@ import {
   checkSummary,
   checkTier,
   formatScore,
+  headerMorph,
   isHighlightedRank,
   isSafeIconUrl,
   matchesMint,
@@ -239,5 +240,39 @@ describe('openFaqTarget', () => {
     expect(openFaqTarget('', root)).toBe(false);
     expect(openFaqTarget('#faq-score', {})).toBe(false);
     expect(details.open).toBe(false);
+  });
+});
+
+describe('headerMorph', () => {
+  const big = { top: 100, left: 20, width: 600 };
+  const small = { top: 10, left: 40, width: 150 };
+
+  it('keeps the big title untouched at the top of the page', () => {
+    expect(headerMorph(0, big, small)).toEqual({ x: 0, scale: 1, docked: false });
+  });
+
+  it('shrinks and slides in proportion to the scroll on the way to the header', () => {
+    expect(headerMorph(45, big, small)).toEqual({ x: 10, scale: 0.625, docked: false });
+  });
+
+  it('lands exactly on the header mark and docks once the distance is covered', () => {
+    expect(headerMorph(90, big, small)).toEqual({ x: 20, scale: 0.25, docked: true });
+    expect(headerMorph(500, big, small)).toEqual({ x: 20, scale: 0.25, docked: true });
+  });
+
+  it('docks right away when the title starts at or above the header', () => {
+    expect(headerMorph(0, { ...big, top: 5 }, small)).toEqual({ x: 20, scale: 0.25, docked: true });
+  });
+
+  it('leaves the title untouched when a size is zero or not a number', () => {
+    const still = { x: 0, scale: 1, docked: false };
+    expect(headerMorph(45, { ...big, width: 0 }, small)).toEqual(still);
+    expect(headerMorph(45, { ...big, width: Number.NaN }, small)).toEqual(still);
+    expect(headerMorph(45, big, { ...small, width: Number.POSITIVE_INFINITY })).toEqual(still);
+    expect(headerMorph(Number.NaN, big, small)).toEqual(still);
+  });
+
+  it('treats negative scroll (overscroll bounce) as the top', () => {
+    expect(headerMorph(-30, big, small)).toEqual({ x: 0, scale: 1, docked: false });
   });
 });
