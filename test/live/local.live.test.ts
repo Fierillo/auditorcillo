@@ -40,6 +40,8 @@ describe('auditor on local FakeWallet mints', () => {
   it('catches the mint that publishes keys its keyset ids do not derive from', async () => {
     const r = await probe(mints.keyset);
     expect(r.checks.keysetIds.ok).toBe(false);
-    expect(score(r)).toMatchObject({ total: 0, alerts: ['keysetIds'] });
+    // Its broken keys also break the cycle before the double-spend check, which then counts as failed.
+    expect(r.incomplete).toBe(true);
+    expect(score(r)).toMatchObject({ total: 0, alerts: ['keysetIds', 'doubleSpendRejected'] });
   }, 60_000);
 });

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { score } from '../src/score.ts';
 import { invoiceSats, mintIconUrl, mintWebsiteUrl, MINT_ERROR_MAX, MINT_TEXT_MAX, probeMint, type LightningWallet, type MintPort, type ProbeDeps } from '../src/probe.ts';
 
 function fakeClock() {
@@ -190,6 +191,27 @@ describe('probeMint full cycle', () => {
     const r = await probeMint({ url: 'https://m', cycle: false }, deps(clock, port, wallet));
     expect(wallet.payInvoice).not.toHaveBeenCalled();
     expect(r.checks.minted).toMatchObject({ ok: false, error: expect.stringMatching(/invoice/i) });
+  });
+});
+
+describe('probeMint cycle broken by the mint', () => {
+  it('marks the probe incomplete, so the double-spend check it never reached scores 0', async () => {
+    const clock = fakeClock();
+    for (const over of [
+      { isMintQuotePaid: async () => false },
+      { mint: async () => Promise.reject(new Error('quote not paid')) },
+      { swap: async () => Promise.reject(new Error('swap down')) },
+    ] satisfies Array<Partial<MintPort>>) {
+      const r = await probeMint({ url: 'https://m', cycle: true }, deps(clock, honestPort(clock, over)));
+      expect(r.checks.doubleSpendRejected, Object.keys(over)[0]).toBeUndefined();
+      expect(r.incomplete, Object.keys(over)[0]).toBe(true);
+      expect(score({ ...r, online: true }).alerts).toEqual(['doubleSpendRejected']);
+    }
+  });
+
+  it('leaves a probe without a cycle complete', async () => {
+    const clock = fakeClock();
+    expect((await probeMint({ url: 'https://m', cycle: false }, deps(clock, honestPort(clock)))).incomplete).toBeUndefined();
   });
 });
 

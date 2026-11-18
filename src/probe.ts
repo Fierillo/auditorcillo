@@ -230,7 +230,11 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
   await check('checkState', 7, port.unknownProofIsUnspent);
 
   const wallet = target.cycle ? undefined : deps.wallet;
-  if (target.cycle || wallet) await cycle(port, deps, signal, wallet, check);
+  if (target.cycle || wallet) {
+    await cycle(port, deps, signal, wallet, check);
+    // A cycle the mint broke before the double-spend check leaves it unproven, so it counts as failed.
+    if (!r.checks.doubleSpendRejected) r.incomplete = true;
+  }
   return done();
 }
 
