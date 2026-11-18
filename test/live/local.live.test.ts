@@ -18,7 +18,7 @@ beforeAll(async () => {
 afterAll(() => Object.values(mints).forEach((m) => m.stop()));
 
 const probe = (m: LocalMint) =>
-  probeMint({ url: m.url, cycle: true }, { port: (url) => cashuPort(url, { allowLocal: true }), now: Date.now, sleep: (ms) => sleep(ms), amount: 8, payTimeoutMs: 10_000 });
+  probeMint({ url: m.url, cycle: true }, { port: (url) => cashuPort(url, { allowLocal: true }), now: Date.now, sleep: (ms) => sleep(ms), amount: 8, payTimeoutMs: 10_000, mintTimeoutMs: 60_000 });
 
 describe('auditor on local FakeWallet mints', () => {
   it('passes every public and cycle check on the honest mint and scores it 100', async () => {

@@ -22,7 +22,8 @@ const ranking = await audit(JSON.parse(await readFile(listPath, 'utf8')), {
   now: Date.now,
   sleep: (ms) => sleep(ms),
   amount: 8,
-  payTimeoutMs: 60_000,
+  payTimeoutMs: 40_000,
+  mintTimeoutMs: 60_000,
   wallet,
 }, previous);
 await writeAtomic(outPath, rankingJson(ranking));

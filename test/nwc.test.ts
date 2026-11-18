@@ -54,6 +54,25 @@ describe('nwcWallet (NIP-47)', () => {
     await expect(nwcWallet(w.uri, { connect: async () => w.relay, timeoutMs: 20 }).payInvoice('lnbc8')).rejects.toThrow(/no answer/);
   });
 
+  it('stops waiting for the wallet as soon as the caller aborts', async () => {
+    const w = walletRelay(() => null);
+    const ctl = new AbortController();
+    const pending = nwcWallet(w.uri, { connect: async () => w.relay }).payInvoice('lnbc8', ctl.signal);
+    ctl.abort(new Error('mint time is up'));
+    await expect(pending).rejects.toThrow(/mint time is up/);
+  });
+
+  it('does not publish a request once the caller has aborted', async () => {
+    const w = walletRelay(() => ({ result: { preimage: 'ab' } }));
+    const ctl = new AbortController();
+    const connect = async () => {
+      ctl.abort(new Error('mint time is up'));
+      return w.relay;
+    };
+    await expect(nwcWallet(w.uri, { connect }).payInvoice('lnbc8', ctl.signal)).rejects.toThrow(/mint time is up/);
+    expect(w.requests).toHaveLength(0);
+  });
+
   it('rejects a malformed NWC_URL without echoing it, since it holds the wallet secret', () => {
     const secret = 'deadbeef'.repeat(8);
     for (const uri of [`nostr+walletconnect://not a pubkey?secret=${secret}`, `nostr+walletconnect://${'a'.repeat(64)}?secret=${secret}`, `garbage ${secret}`, `nostr+walletconnect://${'a'.repeat(64)}?relay=wss://r.test&secret=zz${secret}`]) {

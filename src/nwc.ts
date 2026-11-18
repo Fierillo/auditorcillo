@@ -4,7 +4,7 @@ import { nip47 } from 'nostr-tools';
 import { finalizeEvent, getPublicKey, type Event } from 'nostr-tools/pure';
 import { Relay } from 'nostr-tools/relay';
 import type { Filter } from 'nostr-tools/filter';
-import type { LightningWallet } from './probe.ts';
+import { abortable, type LightningWallet } from './probe.ts';
 
 /** The slice of a nostr-tools Relay that NWC uses; injected in tests. */
 export type NwcRelay = {
@@ -32,33 +32,40 @@ export function nwcWallet(uri: string, { connect = (url) => Relay.connect(url), 
   const { walletPubkey, relays, key, appPubkey } = parseNwcUrl(uri);
   let relay: Promise<NwcRelay> | undefined;
 
-  async function request<T>(method: string, params: Record<string, unknown>): Promise<T> {
-    const r = await (relay ??= connect(relays[0]));
+  /** One NIP-47 request; gives up when `signal` aborts or the wallet stays silent for `timeoutMs`. */
+  async function request<T>(method: string, params: Record<string, unknown>, signal: AbortSignal): Promise<T> {
+    const silent = AbortSignal.timeout(timeoutMs);
+    const stop = AbortSignal.any([signal, silent]);
+    const r = await abortable(relay ??= connect(relays[0]), stop);
+    stop.throwIfAborted();
     const content = encrypt(key, walletPubkey, JSON.stringify({ method, params }));
     const event = finalizeEvent({ kind: 23194, created_at: Math.floor(Date.now() / 1000), tags: [['p', walletPubkey]], content }, key);
-    return new Promise<T>((resolve, reject) => {
-      const timer = setTimeout(() => done(() => reject(new Error(`NWC ${method}: no answer in ${timeoutMs} ms`))), timeoutMs);
-      const sub = r.subscribe([{ kinds: [23195], authors: [walletPubkey], '#e': [event.id], '#p': [appPubkey] }], {
+    let sub: { close(): void } | undefined;
+    const answer = new Promise<T>((resolve, reject) => {
+      sub = r.subscribe([{ kinds: [23195], authors: [walletPubkey], '#e': [event.id], '#p': [appPubkey] }], {
         onevent(reply) {
           const { result, error } = JSON.parse(decrypt(key, walletPubkey, reply.content));
-          done(() => (error ? reject(new Error(`NWC ${method}: ${error.code} ${error.message}`)) : resolve(result)));
+          if (error) reject(new Error(`NWC ${method}: ${error.code} ${error.message}`));
+          else resolve(result);
         },
       });
-      function done(settle: () => void) {
-        clearTimeout(timer);
-        sub.close();
-        settle();
-      }
-      r.publish(event).catch((e) => done(() => reject(e)));
+      r.publish(event).catch(reject);
     });
+    try {
+      return await abortable(answer, stop);
+    } catch (e) {
+      throw silent.aborted && !signal.aborted ? new Error(`NWC ${method}: no answer in ${timeoutMs} ms`) : e;
+    } finally {
+      sub?.close();
+    }
   }
 
   return {
-    async payInvoice(invoice) {
-      await request('pay_invoice', { invoice });
+    async payInvoice(invoice, signal = new AbortController().signal) {
+      await request('pay_invoice', { invoice }, signal);
     },
-    async makeInvoice(sats) {
-      return (await request<{ invoice: string }>('make_invoice', { amount: sats * 1000, description: 'Auditorcillo' })).invoice;
+    async makeInvoice(sats, signal = new AbortController().signal) {
+      return (await request<{ invoice: string }>('make_invoice', { amount: sats * 1000, description: 'Auditorcillo' }, signal)).invoice;
     },
   };
 }

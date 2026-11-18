@@ -24,8 +24,9 @@ export type MintPort = {
 
 /** A real Lightning wallet (NWC) to pay mint quotes and receive melts on mints without FakeWallet. */
 export type LightningWallet = {
-  payInvoice(invoice: string): Promise<void>;
-  makeInvoice(sats: number): Promise<string>;
+  /** Both stop waiting, and never send a request, once `signal` aborts. */
+  payInvoice(invoice: string, signal?: AbortSignal): Promise<void>;
+  makeInvoice(sats: number, signal?: AbortSignal): Promise<string>;
 };
 
 export type ProbeDeps = {
@@ -34,7 +35,10 @@ export type ProbeDeps = {
   sleep(ms: number): Promise<void>;
   /** Sats minted per cycle; the melt pays an invoice for half of it so fees fit. */
   amount: number;
+  /** How long to wait for the mint to report its quote paid; fits inside mintTimeoutMs. */
   payTimeoutMs: number;
+  /** Total time each mint gets for the whole probe, the same for every mint. */
+  mintTimeoutMs: number;
   wallet?: LightningWallet;
 };
 
@@ -53,7 +57,19 @@ export type ProbeResult = Observation & {
   iconUrl?: string;
   /** Mint website: NUT-06 `website` or first safe `urls` entry, else the mint URL origin. */
   websiteUrl?: string;
+  /** Set when the time limit cut the probe short. */
+  incomplete?: true;
 };
+
+/** Settles like `work`, or rejects with the abort reason as soon as `signal` aborts. */
+export function abortable<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const abort = () => reject(signal.reason);
+    if (signal.aborted) abort();
+    else signal.addEventListener('abort', abort, { once: true });
+    work.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
+  });
+}
 
 
 /** BOLT11 amount in sats, or null if the invoice is any-amount, unparseable or not a whole number of sats. */
@@ -128,6 +144,7 @@ const MANDATORY_NUTS = [1, 2, 3, 4, 5, 6];
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<ProbeResult> {
+  const signal = AbortSignal.timeout(deps.mintTimeoutMs);
   const r: ProbeResult = {
     url: target.url,
     name: null,
@@ -144,9 +161,15 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
   if (websiteUrl) r.websiteUrl = websiteUrl;
   const timed = async <T>(read: () => Promise<T>, ms: number[]) => {
     const start = deps.now();
-    const value = await read();
+    const value = await abortable(read(), signal);
     ms.push(deps.now() - start);
     return value;
+  };
+
+  /** A probe cut off by the time limit is incomplete: score() counts its missing critical checks as failed. */
+  const done = () => {
+    if (signal.aborted) r.incomplete = true;
+    return r;
   };
 
   let port: MintPort;
@@ -159,7 +182,7 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
     r.online = true;
   } catch (e) {
     r.error = clip(message(e), MINT_ERROR_MAX);
-    return r;
+    return done();
   }
   const { info, keys, keysets } = reads;
   r.name = mintText(info.name);
@@ -181,8 +204,9 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
   /** Runs a check only if its NUT is announced; a throw fails it. Returns whether it passed. */
   const check = async (name: string, nut: number, run: () => Promise<boolean>) => {
     if (!announced(nut)) return true;
+    if (signal.aborted) return false;
     try {
-      r.checks[name] = { nut, ok: await run() };
+      r.checks[name] = { nut, ok: await abortable(run(), signal) };
     } catch (e) {
       r.checks[name] = { nut, ok: false, error: clip(message(e), MINT_ERROR_MAX) };
       r.error ??= clip(`${name}: ${message(e)}`, MINT_ERROR_MAX);
@@ -206,13 +230,14 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
   await check('checkState', 7, port.unknownProofIsUnspent);
 
   const wallet = target.cycle ? undefined : deps.wallet;
-  if (target.cycle || wallet) await cycle(port, deps, wallet, check);
-  return r;
+  if (target.cycle || wallet) await cycle(port, deps, signal, wallet, check);
+  return done();
 }
 
 async function cycle(
   port: MintPort,
   deps: ProbeDeps,
+  signal: AbortSignal,
   wallet: LightningWallet | undefined,
   check: (name: string, nut: number, run: () => Promise<boolean>) => Promise<boolean>,
 ) {
@@ -224,9 +249,9 @@ async function cycle(
     if (wallet) {
       const sats = invoiceSats(request);
       if (sats !== deps.amount) throw new Error(`mint invoice is ${sats ?? 'unspecified'} sats, expected ${deps.amount}`);
-      await wallet.payInvoice(request);
+      await wallet.payInvoice(request, signal);
     }
-    await waitUntilPaid(port, quote, deps);
+    await waitUntilPaid(port, quote, deps, signal);
     minted = await port.mint(deps.amount, quote);
     return minted.proofs.length > 0;
   });
@@ -237,7 +262,7 @@ async function cycle(
   await check('doubleSpendRejected', 3, () => port.swap(proofs).then(() => false, () => true));
   const half = Math.floor(deps.amount / 2);
   await check('melted', 5, async () => {
-    const invoice = wallet ? await wallet.makeInvoice(half) : (await port.createMintQuote(half)).request;
+    const invoice = wallet ? await wallet.makeInvoice(half, signal) : (await port.createMintQuote(half)).request;
     const { paid, inputs } = await port.melt(invoice, fresh);
     meltInputs = inputs;
     return paid;
@@ -245,10 +270,10 @@ async function cycle(
   await check('spentState', 7, () => port.allSpent([...proofs, ...meltInputs]));
 }
 
-async function waitUntilPaid(port: MintPort, quote: string, deps: ProbeDeps): Promise<void> {
+async function waitUntilPaid(port: MintPort, quote: string, deps: ProbeDeps, signal: AbortSignal): Promise<void> {
   const deadline = deps.now() + deps.payTimeoutMs;
-  while (!(await port.isMintQuotePaid(quote))) {
+  while (!(await abortable(port.isMintQuotePaid(quote), signal))) {
     if (deps.now() >= deadline) throw new Error(`mint quote not paid within ${deps.payTimeoutMs} ms`);
-    await deps.sleep(POLL_MS);
+    await abortable(deps.sleep(POLL_MS), signal);
   }
 }

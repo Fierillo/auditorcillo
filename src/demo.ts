@@ -9,7 +9,7 @@ const mints = await Promise.all([startLocalMint(3391, 'honest'), startLocalMint(
 try {
   const ranking = await audit(
     mints.map(({ url }) => ({ url, cycle: true })),
-    { port: (url) => cashuPort(url, { allowLocal: true }), now: Date.now, sleep: (ms) => sleep(ms), amount: 8, payTimeoutMs: 10_000 },
+    { port: (url) => cashuPort(url, { allowLocal: true }), now: Date.now, sleep: (ms) => sleep(ms), amount: 8, payTimeoutMs: 10_000, mintTimeoutMs: 60_000 },
   );
   printRanking(ranking);
 } finally {

@@ -63,7 +63,7 @@ function deps(clock: Clock, port: MintPort | Error, wallet?: LightningWallet): P
     now: clock.now,
     sleep: clock.sleep,
     amount: 8,
-    payTimeoutMs: 5_000,
+    payTimeoutMs: 5_000, mintTimeoutMs: 60_000,
     wallet,
   };
 }
@@ -161,8 +161,8 @@ describe('probeMint full cycle', () => {
 
     const r = await probeMint({ url: 'https://m', cycle: false }, deps(clock, port, wallet));
     expect(r.checks.melted.ok).toBe(true);
-    expect(wallet.payInvoice).toHaveBeenCalledWith('lnbc80n');
-    expect(wallet.makeInvoice).toHaveBeenCalledWith(4);
+    expect(wallet.payInvoice).toHaveBeenCalledWith('lnbc80n', expect.any(AbortSignal));
+    expect(wallet.makeInvoice).toHaveBeenCalledWith(4, expect.any(AbortSignal));
     expect(melt).toHaveBeenCalledWith('lnbc40n', expect.any(Array));
   });
 
@@ -190,6 +190,44 @@ describe('probeMint full cycle', () => {
     const r = await probeMint({ url: 'https://m', cycle: false }, deps(clock, port, wallet));
     expect(wallet.payInvoice).not.toHaveBeenCalled();
     expect(r.checks.minted).toMatchObject({ ok: false, error: expect.stringMatching(/invoice/i) });
+  });
+});
+
+describe('probeMint time limit', () => {
+  const hang = () => new Promise<never>(() => {});
+
+  it('gives up on a mint that hangs in a check, fails that check and runs nothing after it', async () => {
+    const clock = fakeClock();
+    const port = honestPort(clock, { unknownProofIsUnspent: hang });
+    const mint = vi.spyOn(port, 'mint');
+    const r = await probeMint({ url: 'https://m', cycle: true }, { ...deps(clock, port), mintTimeoutMs: 20 });
+    expect(r.incomplete).toBe(true);
+    expect(r.checks.checkState).toMatchObject({ ok: false, error: expect.stringMatching(/timeout/i) });
+    expect(r.checks.minted).toBeUndefined();
+    expect(mint).not.toHaveBeenCalled();
+  });
+
+  it('reports a mint that hangs in the public reads as offline and incomplete', async () => {
+    const clock = fakeClock();
+    const r = await probeMint({ url: 'https://m', cycle: false }, { ...deps(clock, honestPort(clock, { keys: hang })), mintTimeoutMs: 20 });
+    expect(r).toMatchObject({ online: false, incomplete: true, error: expect.stringMatching(/timeout/i) });
+  });
+
+  it('stops polling an unpaid quote once the mint time is up', async () => {
+    const clock = fakeClock();
+    let polls = 0;
+    const port = honestPort(clock, { isMintQuotePaid: async () => (polls++, false) });
+    const slow: ProbeDeps = { ...deps(clock, port), sleep: (ms) => new Promise((done) => setTimeout(done, ms / 100)), payTimeoutMs: 1e9, mintTimeoutMs: 50 };
+    const r = await probeMint({ url: 'https://m', cycle: true }, slow);
+    const seen = polls;
+    await new Promise((done) => setTimeout(done, 50));
+    expect(r.incomplete).toBe(true);
+    expect(polls).toBe(seen);
+  });
+
+  it('leaves a probe that finished in time complete', async () => {
+    const clock = fakeClock();
+    expect((await probeMint({ url: 'https://m', cycle: true }, deps(clock, honestPort(clock)))).incomplete).toBeUndefined();
   });
 });
 

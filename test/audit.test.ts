@@ -23,7 +23,7 @@ describe('audit', () => {
       'https://fast': reachable(10, now),
       'https://down': { info: async () => Promise.reject(new Error('down')) } as unknown as MintPort,
     };
-    const deps: ProbeDeps = { port: (url) => ports[url], now: () => now.t, sleep: async () => {}, amount: 8, payTimeoutMs: 1 };
+    const deps: ProbeDeps = { port: (url) => ports[url], now: () => now.t, sleep: async () => {}, amount: 8, payTimeoutMs: 1, mintTimeoutMs: 60_000 };
     const out = await audit(Object.keys(ports).map((url) => ({ url, cycle: false })), deps);
     expect(out.generatedAt).toBe(new Date(Date.UTC(2026, 10, 15)).toISOString());
     expect(out.weights).toEqual(SCORE.weights);
@@ -36,7 +36,7 @@ describe('audit', () => {
 
   it('carries each mint uptime history from the previous ranking, newest last and capped', async () => {
     const now = { t: 0 };
-    const deps: ProbeDeps = { port: () => reachable(10, now), now: () => now.t, sleep: async () => {}, amount: 8, payTimeoutMs: 1 };
+    const deps: ProbeDeps = { port: () => reachable(10, now), now: () => now.t, sleep: async () => {}, amount: 8, payTimeoutMs: 1, mintTimeoutMs: 60_000 };
     const old = Array.from({ length: SCORE.historyRuns }, (_, i) => i % 2 === 0);
     const previous = { mints: [{ url: 'https://kept', history: old }] };
     const out = await audit([{ url: 'https://kept', cycle: false }, { url: 'https://new', cycle: false }], deps, previous);
@@ -59,7 +59,7 @@ describe('audit', () => {
       now: () => now.t,
       sleep: async () => {},
       amount: 8,
-      payTimeoutMs: 1,
+      payTimeoutMs: 1, mintTimeoutMs: 60_000,
     };
     const out = await audit(['https://good', 'https://garbage', 'not-a-url'].map((url) => ({ url, cycle: false })), deps);
     expect(out.mints.map((m) => m.url).sort()).toEqual(['https://garbage', 'https://good', 'not-a-url']);
