@@ -58,6 +58,15 @@ export async function audit(targets: MintTarget[], deps: ProbeDeps, previous: Pr
   return { generatedAt, weights: SCORE.weights, mints: rank(results) };
 }
 
+/** mints.json, one mint per line, with every mint this run caught keeping our sats flagged as scam.
+ * Flags are only ever added here; removing one is a manual edit. */
+export function flaggedMintsJson(targets: MintTarget[], mints: Array<{ url: string; scam?: true }>): string {
+  const caught = new Set(mints.filter((m) => m.scam).map((m) => m.url));
+  const line = (t: MintTarget) =>
+    `  { ${Object.entries(caught.has(t.url) ? { ...t, scam: true } : t).map(([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(', ')} }`;
+  return `[\n${targets.map(line).join(',\n')}\n]\n`;
+}
+
 export const RANKING_MAX_BYTES = 100_000;
 
 export function rankingJson(ranking: unknown): string {

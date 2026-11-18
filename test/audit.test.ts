@@ -2,7 +2,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { audit, concurrency, MINT_TIMEOUT_MS, parsePrevious, PAY_TIMEOUT_MS, rankingJson, RANKING_MAX_BYTES, RUN_BUDGET_MS, writeAtomic } from '../src/audit.ts';
+import { audit, concurrency, flaggedMintsJson, MINT_TIMEOUT_MS, parsePrevious, PAY_TIMEOUT_MS, rankingJson, RANKING_MAX_BYTES, RUN_BUDGET_MS, writeAtomic } from '../src/audit.ts';
 import type { MintPort, ProbeDeps } from '../src/probe.ts';
 import { SCORE } from '../src/score.ts';
 
@@ -105,6 +105,25 @@ describe('run time budget', () => {
       expect(out.mints, String(n)).toHaveLength(n);
       expect(peak, String(n)).toBe(concurrency(n, MINT_TIMEOUT_MS));
     }
+  });
+});
+
+describe('flaggedMintsJson', () => {
+  const targets = [{ url: 'https://a', cycle: true }, { url: 'https://b', cycle: false }, { url: 'https://c', cycle: false, scam: true }];
+
+  it('flags every mint this run caught as scam, keeping order, fields and earlier flags', () => {
+    const out = JSON.parse(flaggedMintsJson(targets, [{ url: 'https://c', scam: true }, { url: 'https://b', scam: true }, { url: 'https://a' }]));
+    expect(out).toEqual([{ url: 'https://a', cycle: true }, { url: 'https://b', cycle: false, scam: true }, { url: 'https://c', cycle: false, scam: true }]);
+  });
+
+  it('rewrites mints.json byte for byte when nothing new was caught, so the workflow commits only real flags', async () => {
+    const text = await readFile(new URL('../mints.json', import.meta.url), 'utf8');
+    expect(flaggedMintsJson(JSON.parse(text), [])).toBe(text);
+  });
+
+  it('is committed by the ranking workflow next to ranking.json', async () => {
+    const workflow = await readFile(new URL('../.github/workflows/ranking.yml', import.meta.url), 'utf8');
+    expect(workflow).toMatch(/git add site\/ranking\.json mints\.json/);
   });
 });
 

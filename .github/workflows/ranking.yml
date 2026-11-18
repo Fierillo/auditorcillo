@@ -1,4 +1,5 @@
-# Probes the mints in mints.json every 3 hours and commits site/ranking.json; Vercel redeploys the static page.
+# Probes the mints in mints.json every 3 hours and commits site/ranking.json, plus mints.json when a mint is newly
+# flagged as scam; Vercel redeploys the static page.
 name: ranking
 on:
   schedule:
@@ -34,7 +35,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add site/ranking.json
+          git add site/ranking.json mints.json
           git diff --cached --quiet || {
             git commit -m 'chore: update mint ranking'
             auth=$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)

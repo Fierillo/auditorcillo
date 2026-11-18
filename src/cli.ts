@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { setGlobalRequestOptions } from '@cashu/cashu-ts';
 import { setGlobalDispatcher } from 'undici';
-import { audit, MINT_TIMEOUT_MS, PAY_TIMEOUT_MS, parsePrevious, printRanking, rankingJson, writeAtomic } from './audit.ts';
+import { audit, flaggedMintsJson, MINT_TIMEOUT_MS, PAY_TIMEOUT_MS, parsePrevious, printRanking, rankingJson, writeAtomic } from './audit.ts';
 import { cappedFetch, cashuPort } from './cashu.ts';
 import { nwcWallet } from './nwc.ts';
 import { mintAgent } from './url.ts';
@@ -17,7 +17,8 @@ setGlobalRequestOptions({ requestTimeout: 15_000, redirect: 'error' });
 globalThis.fetch = cappedFetch(globalThis.fetch, 1_000_000);
 const wallet = process.env.NWC_URL ? nwcWallet(process.env.NWC_URL) : undefined;
 const previous = parsePrevious(await readFile(outPath, 'utf8').catch(() => '')); // carries uptime history
-const ranking = await audit(JSON.parse(await readFile(listPath, 'utf8')), {
+const targets = JSON.parse(await readFile(listPath, 'utf8'));
+const ranking = await audit(targets, {
   port: cashuPort,
   now: Date.now,
   sleep: (ms) => sleep(ms),
@@ -27,6 +28,7 @@ const ranking = await audit(JSON.parse(await readFile(listPath, 'utf8')), {
   wallet,
 }, previous);
 await writeAtomic(outPath, rankingJson(ranking));
+await writeAtomic(listPath, flaggedMintsJson(targets, ranking.mints)); // persists new scam flags
 printRanking(ranking);
 console.log(`written ${outPath}`);
 process.exit(0); // an NWC relay socket would otherwise keep the process alive
