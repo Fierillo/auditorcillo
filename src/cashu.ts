@@ -4,10 +4,6 @@ import { Amount, Keyset, Mint, Wallet, hasValidDleq, hashToCurve, type Proof } f
 import { isObject, type MintPort } from './probe.ts';
 import { assertMintAddresses, assertMintUrl, type MintUrlOptions } from './url.ts';
 
-
-export { assertMintUrl, type MintUrlOptions };
-
-
 /** More than any real mint announces; keeps a hostile list from bloating ranking.json. */
 export const NUTS_MAX = 64;
 

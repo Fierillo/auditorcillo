@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { assertMintAddresses } from '../src/url.ts';
-import { announcedNuts, assertMintUrl, cappedFetch, NUTS_MAX } from '../src/cashu.ts';
+import { assertMintAddresses, assertMintUrl } from '../src/url.ts';
+import { announcedNuts, cappedFetch, NUTS_MAX } from '../src/cashu.ts';
 
 describe('announcedNuts', () => {
   it('lists supported NUTs and the enabled mint/melt methods, ignoring disabled or unsupported ones', () => {
