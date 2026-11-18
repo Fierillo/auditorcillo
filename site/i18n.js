@@ -28,7 +28,7 @@ export const MESSAGES = {
     faqUpdateA: 'A scheduled GitHub Action probes the mint list about every 3 hours and publishes a new ranking.json.',
     faqFraudQ: 'What does “possible fraud” mean?',
     faqFraudA:
-      'A mint is flagged and its score is set to 0 if it accepts an already spent token, or if its keyset IDs do not derive from its published keys.',
+      'A mint is flagged and its score is set to 0 if it accepts an already spent token, if its keyset IDs do not derive from its published keys, or if it stops answering before we can check that it rejects a spent token. A mint that keeps sats we paid it is marked SCAM and is only tested without money until we review it by hand.',
     faqSourceQ: 'Is the code open?',
     faqSourceA: 'Yes. Auditorcillo is a public project under the MIT license.',
     faqSourceLink: 'Source on GitHub',
@@ -38,6 +38,8 @@ export const MESSAGES = {
     scoreOutOfTen: '{score}/10',
     fraud: '⚠ [faq-fraud]Possible fraud[/faq-fraud]: {alerts}',
     offline: 'Does not respond',
+    scam: 'SCAM',
+    notMeasured: 'Not measured, our wallet failed: {check}',
     checks: 'Checks',
     checksPassed: '{passed} of {total} [faq-checks]checks[/faq-checks]',
     uptimeLabel: '[faq-score]Uptime[/faq-score]',
@@ -61,6 +63,7 @@ export const MESSAGES = {
     check_doubleSpendRejected: 'Rejects an already spent token (NUT-03)',
     check_melted: 'Pays a Lightning invoice (NUT-05)',
     check_spentState: 'Marks used tokens as spent (NUT-07)',
+    check_scam: 'kept the sats we paid it (SCAM)',
   },
   es: {
     title: 'Auditorcillo · ranking de mints Cashu',
@@ -91,7 +94,7 @@ export const MESSAGES = {
     faqUpdateA: 'Una GitHub Action programada prueba la lista de mints cada 3 horas aproximadamente y publica un nuevo ranking.json.',
     faqFraudQ: '¿Qué significa «posible fraude»?',
     faqFraudA:
-      'Un mint queda marcado y su puntaje en 0 si acepta un token ya gastado, o si los IDs de sus keysets no derivan de las claves que publica.',
+      'Un mint queda marcado y su puntaje en 0 si acepta un token ya gastado, si los IDs de sus keysets no derivan de las claves que publica, o si deja de responder antes de que podamos comprobar que rechaza un token gastado. Un mint que se queda con sats que le pagamos queda marcado como SCAM y solo se prueba sin plata hasta que lo revisemos a mano.',
     faqSourceQ: '¿El código es abierto?',
     faqSourceA: 'Sí. Auditorcillo es un proyecto público con licencia MIT.',
     faqSourceLink: 'Código en GitHub',
@@ -101,6 +104,8 @@ export const MESSAGES = {
     scoreOutOfTen: '{score}/10',
     fraud: '⚠ [faq-fraud]Posible fraude[/faq-fraud]: {alerts}',
     offline: 'No responde',
+    scam: 'SCAM',
+    notMeasured: 'No medido, falló nuestra wallet: {check}',
     checks: 'Chequeos',
     checksPassed: '{passed} de {total} [faq-checks]chequeos[/faq-checks]',
     uptimeLabel: '[faq-score]Tiempo en línea[/faq-score]',
@@ -124,6 +129,7 @@ export const MESSAGES = {
     check_doubleSpendRejected: 'Rechaza un token ya gastado (NUT-03)',
     check_melted: 'Paga una factura Lightning (NUT-05)',
     check_spentState: 'Marca como gastados los tokens usados (NUT-07)',
+    check_scam: 'se quedó con los sats que le pagamos (SCAM)',
   },
 };
 

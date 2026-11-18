@@ -202,7 +202,9 @@ function renderMint(m, i, weights, maxScore) {
   card.append(parts);
 
   const chips = el('div', '', 'chips');
+  if (m.scam) chips.append(el('span', t('scam'), 'chip fail'));
   if (!m.online) chips.append(el('span', t('offline'), 'chip fail'));
+  if (m.notMeasured) chips.append(el('span', t('notMeasured', { check: checkLabel(m.notMeasured) }), 'chip mid'));
   const summary = checkSummary(m.checks);
   const tier = checkTier(summary.passed, summary.total);
   if (tier) {
