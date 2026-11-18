@@ -4,36 +4,35 @@ import { BlockList, isIP } from 'node:net';
 
 export type MintUrlOptions = { allowLocal?: boolean };
 
-function ipv4(host: string): number[] | null {
-  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
-  if (!m) return null;
-  const parts = m.slice(1).map(Number);
-  return parts.every((n) => n <= 255) ? parts : null;
+/** Non-public address ranges (loopback included). BlockList checks IPv4-mapped IPv6 (::ffff:a.b.c.d) against the
+ * IPv4 rules; the other IPv6 ranges that embed an IPv4 address (compatible, translated, NAT64) are refused whole. */
+const RESERVED = blockList(
+  [['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12],
+    ['192.0.0.0', 24], ['192.168.0.0', 16], ['198.18.0.0', 15], ['224.0.0.0', 3]],
+  [['::', 96], ['::ffff:0:0:0', 96], ['64:ff9b::', 96], ['fc00::', 7], ['fe80::', 10], ['ff00::', 8]],
+);
+const LOOPBACK = blockList([['127.0.0.0', 8]], [['::1', 128]]);
+
+function blockList(v4: Array<[string, number]>, v6: Array<[string, number]>): BlockList {
+  const list = new BlockList();
+  for (const [net, prefix] of v4) list.addSubnet(net, prefix, 'ipv4');
+  for (const [net, prefix] of v6) list.addSubnet(net, prefix, 'ipv6');
+  return list;
+}
+
+/** True for an IP literal in `list`; host names never match. */
+function listed(list: BlockList, host: string): boolean {
+  const family = isIP(host);
+  return family !== 0 && list.check(host, family === 4 ? 'ipv4' : 'ipv6');
 }
 
 function isLoopback(host: string): boolean {
   const h = host.toLowerCase();
-  if (h === 'localhost' || h.endsWith('.localhost') || h === '::1') return true;
-  const p = ipv4(h);
-  return !!p && p[0] === 127;
+  return h === 'localhost' || h.endsWith('.localhost') || listed(LOOPBACK, h);
 }
-
-/** Non-public address ranges (loopback included). BlockList checks IPv4-mapped IPv6 (::ffff:a.b.c.d) against the
- * IPv4 rules; the other IPv6 ranges that embed an IPv4 address (compatible, translated, NAT64) are refused whole. */
-const RESERVED = new BlockList();
-for (const [net, prefix] of [
-  ['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12],
-  ['192.0.0.0', 24], ['192.168.0.0', 16], ['198.18.0.0', 15], ['224.0.0.0', 3],
-] as const) RESERVED.addSubnet(net, prefix, 'ipv4');
-for (const [net, prefix] of [
-  ['::', 96], ['::ffff:0:0:0', 96], ['64:ff9b::', 96], ['fc00::', 7], ['fe80::', 10], ['ff00::', 8],
-] as const) RESERVED.addSubnet(net, prefix, 'ipv6');
 
 /** True for an IP literal in a non-public range; host names are left to the DNS check. */
-function isPrivateOrReserved(host: string): boolean {
-  const family = isIP(host);
-  return family !== 0 && RESERVED.check(host, family === 4 ? 'ipv4' : 'ipv6');
-}
+const isPrivateOrReserved = (host: string) => listed(RESERVED, host);
 
 /** Throws unless `url` is https to a public host, or loopback with `{ allowLocal: true }`. */
 export function assertMintUrl(url: string, { allowLocal = false }: MintUrlOptions = {}): void {
