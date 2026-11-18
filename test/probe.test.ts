@@ -258,6 +258,56 @@ describe('probeMint when our own wallet fails', () => {
   });
 });
 
+describe('probeMint scam detection', () => {
+  const paying = () => ({ payInvoice: vi.fn(async () => {}), makeInvoice: vi.fn(async (sats: number) => `lnbc${sats * 10}n`) });
+
+  it('flags a mint that took our paid sats and then would not issue or give them back', async () => {
+    const clock = fakeClock();
+    for (const over of [
+      { mint: async () => Promise.reject(new Error('quote already issued')) },
+      { mint: async () => ({ proofs: [], dleqValid: true }) },
+      { swap: async () => Promise.reject(new Error('swap down')) },
+      { melt: async () => ({ paid: false, inputs: [] }) },
+      { melt: async () => Promise.reject(new Error('melt failed')) },
+    ] satisfies Array<Partial<MintPort>>) {
+      const r = await probeMint({ url: 'https://m', cycle: false }, deps(clock, honestPort(clock, over), paying()));
+      expect(r.scam, JSON.stringify(Object.keys(over))).toBe(true);
+    }
+  });
+
+  it('never flags without proof the mint holds our sats', async () => {
+    const clock = fakeClock();
+    const hang = () => new Promise<never>(() => {});
+    const cases: Array<[string, ProbeDeps, boolean]> = [
+      ['honest', deps(clock, honestPort(clock), paying()), false],
+      ['our wallet failed to pay', deps(clock, honestPort(clock), { ...paying(), payInvoice: async () => Promise.reject(new Error('NWC')) }), false],
+      ['our wallet failed to invoice', deps(clock, honestPort(clock, { melt: async () => ({ paid: false, inputs: [] }) }), { ...paying(), makeInvoice: async () => Promise.reject(new Error('NWC')) }), false],
+      ['quote never reported paid', deps(clock, honestPort(clock, { isMintQuotePaid: async () => false }), paying()), false],
+      ['time limit', { ...deps(clock, honestPort(clock, { swap: hang }), paying()), mintTimeoutMs: 20 }, false],
+      ['FakeWallet mint', deps(clock, honestPort(clock, { mint: async () => Promise.reject(new Error('x')) })), true],
+    ];
+    for (const [label, d, fake] of cases) {
+      const r = await probeMint({ url: 'https://m', cycle: fake }, d);
+      expect(r.scam, label).toBeUndefined();
+    }
+  });
+
+  it('probes a flagged mint with read-only checks and never with money', async () => {
+    const clock = fakeClock();
+    const port = honestPort(clock);
+    const mint = vi.spyOn(port, 'mint');
+    const wallet = paying();
+    for (const cycle of [true, false]) {
+      const r = await probeMint({ url: 'https://m', cycle, scam: true }, deps(clock, port, wallet));
+      expect(r).toMatchObject({ online: true, scam: true });
+      expect(Object.keys(r.checks).sort()).toEqual(['checkState', 'keysetIds', 'keysetsListed', 'meltQuote', 'mintQuote']);
+      expect(r.incomplete).toBeUndefined();
+    }
+    expect(wallet.payInvoice).not.toHaveBeenCalled();
+    expect(mint).not.toHaveBeenCalled();
+  });
+});
+
 describe('probeMint time limit', () => {
   const hang = () => new Promise<never>(() => {});
 

@@ -79,6 +79,13 @@ describe('score', () => {
     }
   });
 
+  it('zeroes a mint flagged as scam and says so first', () => {
+    expect(score(perfect({ scam: true }))).toMatchObject({ total: 0, alerts: ['scam'] });
+    const both = perfect({ scam: true });
+    both.checks.keysetIds = { nut: 2, ok: false };
+    expect(score(both).alerts).toEqual(['scam', 'keysetIds']);
+  });
+
   it('counts a critical check an incomplete probe never reached as failed', () => {
     expect(score(perfect({ incomplete: true }))).toMatchObject({ total: 0, alerts: ['doubleSpendRejected'] });
     const reached = perfect({ incomplete: true });

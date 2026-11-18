@@ -25,6 +25,8 @@ export type Observation = {
   checks: Record<string, CheckResult>;
   /** The probe was cut short: a critical check it never reached counts as failed. */
   incomplete?: boolean;
+  /** The mint kept sats we paid it: score 0 until the flag is removed by hand. */
+  scam?: boolean;
 };
 export type Score = { total: number; parts: Record<Part, number>; alerts: string[] };
 
@@ -44,7 +46,10 @@ export function score(o: Observation): Score {
         info: weights.info * share(Object.values(o.info)),
       }
     : { availability: 0, nuts: 0, keysets: 0, info: 0 };
-  const alerts = critical.filter((name) => o.checks[name]?.ok === false || (o.incomplete && !o.checks[name]));
+  const alerts = [
+    ...(o.scam ? ['scam'] : []),
+    ...critical.filter((name) => o.checks[name]?.ok === false || (o.incomplete && !o.checks[name])),
+  ];
   const total = alerts.length ? 0 : Object.values(parts).reduce((a, b) => a + b, 0);
   return { total: Math.round(total * 10) / 10, parts, alerts };
 }

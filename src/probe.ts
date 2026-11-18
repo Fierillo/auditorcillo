@@ -42,8 +42,9 @@ export type ProbeDeps = {
   wallet?: LightningWallet;
 };
 
-/** `cycle: true` = FakeWallet mint: the full cycle is free and never touches the real wallet. */
-export type MintTarget = { url: string; cycle: boolean };
+/** `cycle: true` = FakeWallet mint: the full cycle is free and never touches the real wallet.
+ * `scam: true` = it kept sats we paid it: read-only checks only, until someone removes the flag by hand. */
+export type MintTarget = { url: string; cycle: boolean; scam?: boolean };
 
 export type ProbeResult = Observation & {
   url: string;
@@ -61,6 +62,8 @@ export type ProbeResult = Observation & {
   incomplete?: true;
   /** The check our own wallet broke: left out, so it neither passes nor fails the mint. */
   notMeasured?: string;
+  /** The mint kept sats we paid it (now or in an earlier run). */
+  scam?: true;
 };
 
 /** Settles like `work`, or rejects with the abort reason as soon as `signal` aborts. */
@@ -159,6 +162,7 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
     checks: {},
     error: null,
   };
+  if (target.scam) r.scam = true;
   const websiteUrl = mintWebsiteUrl(undefined, target.url);
   if (websiteUrl) r.websiteUrl = websiteUrl;
   const timed = async <T>(read: () => Promise<T>, ms: number[]) => {
@@ -252,8 +256,10 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
   await check('meltQuote', 5, async () => (await port.createMeltQuote(invoice)).amount >= deps.amount);
   await check('checkState', 7, port.unknownProofIsUnspent);
 
-  if (target.cycle || wallet) {
-    await cycle(port, deps, signal, wallet, check);
+  if (!target.scam && (target.cycle || wallet)) {
+    const paid = await cycle(port, deps, signal, wallet, check);
+    // We paid and the mint confirmed it, yet it neither issued the ecash nor let us melt it back.
+    if (paid && !signal.aborted && !r.notMeasured && !r.checks.melted?.ok) r.scam = true;
     // A cycle the mint broke before the double-spend check leaves it unproven, so it counts as failed.
     if (!r.checks.doubleSpendRejected && !r.notMeasured) r.incomplete = true;
   }
@@ -266,7 +272,9 @@ async function cycle(
   signal: AbortSignal,
   wallet: LightningWallet | undefined,
   check: (name: string, nut: number, run: () => Promise<boolean>) => Promise<boolean>,
-) {
+): Promise<boolean> {
+  /** Our wallet paid the mint invoice and the mint reported the quote paid. */
+  let paid = false;
   let minted: { proofs: unknown[]; dleqValid: boolean } | undefined;
   let fresh: unknown[] = [];
   let meltInputs: unknown[] = [];
@@ -278,13 +286,14 @@ async function cycle(
       await wallet.payInvoice(request, signal);
     }
     await waitUntilPaid(port, quote, deps, signal);
+    paid = !!wallet;
     minted = await port.mint(deps.amount, quote);
     return minted.proofs.length > 0;
   });
-  if (!ok || !minted) return;
+  if (!ok || !minted) return paid;
   const { proofs, dleqValid } = minted;
   await check('dleq', 12, async () => dleqValid);
-  if (!(await check('swap', 3, async () => (fresh = await port.swap(proofs)).length > 0))) return;
+  if (!(await check('swap', 3, async () => (fresh = await port.swap(proofs)).length > 0))) return paid;
   await check('doubleSpendRejected', 3, () => port.swap(proofs).then(() => false, () => true));
   const half = Math.floor(deps.amount / 2);
   await check('melted', 5, async () => {
@@ -294,6 +303,7 @@ async function cycle(
     return paid;
   });
   await check('spentState', 7, () => port.allSpent([...proofs, ...meltInputs]));
+  return paid;
 }
 
 async function waitUntilPaid(port: MintPort, quote: string, deps: ProbeDeps, signal: AbortSignal): Promise<void> {
