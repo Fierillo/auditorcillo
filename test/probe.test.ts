@@ -215,6 +215,49 @@ describe('probeMint cycle broken by the mint', () => {
   });
 });
 
+describe('probeMint when our own wallet fails', () => {
+  const hang = () => new Promise<never>(() => {});
+  const wallet = (over: Partial<LightningWallet> = {}): LightningWallet => ({
+    payInvoice: async () => {},
+    makeInvoice: async (sats) => `lnbc${sats * 10}n`,
+    ...over,
+  });
+
+  it('leaves the check it broke unmeasured instead of failing the mint', async () => {
+    const clock = fakeClock();
+    for (const [name, w, limit] of [
+      ['minted', wallet({ payInvoice: async () => Promise.reject(new Error('NWC pay_invoice: INSUFFICIENT_BALANCE')) }), 60_000],
+      ['melted', wallet({ makeInvoice: async () => Promise.reject(new Error('NWC make_invoice: RATE_LIMITED')) }), 60_000],
+      ['minted', wallet({ payInvoice: hang }), 20],
+    ] as const) {
+      const r = await probeMint({ url: 'https://m', cycle: false }, { ...deps(clock, honestPort(clock), w), mintTimeoutMs: limit });
+      expect(r.notMeasured, name).toBe(name);
+      expect(r.checks[name], name).toBeUndefined();
+      expect(r.incomplete, name).toBeUndefined();
+      expect(r.error, name).toMatch(/our wallet/);
+      expect(score({ ...r, online: true }).alerts, name).toEqual([]);
+    }
+  });
+
+  it('blames the mint again for a later check after our wallet broke one', async () => {
+    const clock = fakeClock();
+    const port = honestPort(clock, { allSpent: async () => Promise.reject(new Error('checkstate down')) });
+    const w = wallet({ makeInvoice: async () => Promise.reject(new Error('NWC make_invoice: RATE_LIMITED')) });
+    const r = await probeMint({ url: 'https://m', cycle: false }, deps(clock, port, w));
+    expect(r.notMeasured).toBe('melted');
+    expect(r.checks.spentState).toMatchObject({ ok: false, error: 'checkstate down' });
+  });
+
+  it('still blames the mint for its own errors in the same check', async () => {
+    const clock = fakeClock();
+    const port = honestPort(clock, { mint: async () => Promise.reject(new Error('outputs already signed')) });
+    const r = await probeMint({ url: 'https://m', cycle: false }, deps(clock, port, wallet()));
+    expect(r.notMeasured).toBeUndefined();
+    expect(r.checks.minted.ok).toBe(false);
+    expect(r.incomplete).toBe(true);
+  });
+});
+
 describe('probeMint time limit', () => {
   const hang = () => new Promise<never>(() => {});
 

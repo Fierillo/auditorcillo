@@ -57,8 +57,10 @@ export type ProbeResult = Observation & {
   iconUrl?: string;
   /** Mint website: NUT-06 `website` or first safe `urls` entry, else the mint URL origin. */
   websiteUrl?: string;
-  /** Set when the time limit cut the probe short. */
+  /** Set when the time limit or the mint cut the probe short. */
   incomplete?: true;
+  /** The check our own wallet broke: left out, so it neither passes nor fails the mint. */
+  notMeasured?: string;
 };
 
 /** Settles like `work`, or rejects with the abort reason as soon as `signal` aborts. */
@@ -166,9 +168,10 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
     return value;
   };
 
-  /** A probe cut off by the time limit is incomplete: score() counts its missing critical checks as failed. */
+  /** A probe cut off by the time limit is incomplete: score() counts its missing critical checks as failed.
+   * Never when our own wallet is what stopped it. */
   const done = () => {
-    if (signal.aborted) r.incomplete = true;
+    if (signal.aborted && !r.notMeasured) r.incomplete = true;
     return r;
   };
 
@@ -200,6 +203,20 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
     contact: hasContact(info.contact),
   };
 
+  const real = target.cycle ? undefined : deps.wallet;
+  // walletBusy stays set when our wallet fails or is still pending at the time limit: that check isn't the mint's fault.
+  let walletBusy = false;
+  const ours = async <T>(work: () => Promise<T>) => {
+    walletBusy = true;
+    const value = await work();
+    walletBusy = false;
+    return value;
+  };
+  const wallet: LightningWallet | undefined = real && {
+    payInvoice: (invoice, s) => ours(() => real.payInvoice(invoice, s)),
+    makeInvoice: (sats, s) => ours(() => real.makeInvoice(sats, s)),
+  };
+
   const announced = (nut: number) => MANDATORY_NUTS.includes(nut) || info.nuts.includes(nut);
   /** Runs a check only if its NUT is announced; a throw fails it. Returns whether it passed. */
   const check = async (name: string, nut: number, run: () => Promise<boolean>) => {
@@ -208,6 +225,12 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
     try {
       r.checks[name] = { nut, ok: await abortable(run(), signal) };
     } catch (e) {
+      if (walletBusy) {
+        walletBusy = false;
+        r.notMeasured = name;
+        r.error ??= clip(`${name}: our wallet: ${message(e)}`, MINT_ERROR_MAX);
+        return false;
+      }
       r.checks[name] = { nut, ok: false, error: clip(message(e), MINT_ERROR_MAX) };
       r.error ??= clip(`${name}: ${message(e)}`, MINT_ERROR_MAX);
     }
@@ -229,11 +252,10 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
   await check('meltQuote', 5, async () => (await port.createMeltQuote(invoice)).amount >= deps.amount);
   await check('checkState', 7, port.unknownProofIsUnspent);
 
-  const wallet = target.cycle ? undefined : deps.wallet;
   if (target.cycle || wallet) {
     await cycle(port, deps, signal, wallet, check);
     // A cycle the mint broke before the double-spend check leaves it unproven, so it counts as failed.
-    if (!r.checks.doubleSpendRejected) r.incomplete = true;
+    if (!r.checks.doubleSpendRejected && !r.notMeasured) r.incomplete = true;
   }
   return done();
 }
