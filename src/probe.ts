@@ -77,11 +77,13 @@ export function invoiceSats(invoice: string): number | null {
 
 export const MINT_TEXT_MAX = 200;
 export const MINT_ERROR_MAX = 500;
+/** A non-null object: the shape check every untrusted JSON value goes through first. */
+export const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
 const clip = (s: string, max: number) => (s.length <= max ? s : s.slice(0, max));
 const mintText = (value: unknown) => (typeof value === 'string' ? clip(value, MINT_TEXT_MAX) : null);
 /** NUT-06 contact: a list of `{ method, info }`; anything else counts as no contact. */
 const hasContact = (contact: unknown) =>
-  Array.isArray(contact) && contact.some((c) => typeof c === 'object' && c !== null && typeof c.info === 'string' && c.info !== '');
+  Array.isArray(contact) && contact.some((c) => isObject(c) && typeof c.info === 'string' && c.info !== '');
 
 /** A public https URL no longer than other mint text, or undefined. */
 export function publicHttpsUrl(value: unknown): string | undefined {

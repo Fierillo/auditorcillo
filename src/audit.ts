@@ -1,10 +1,8 @@
 import { rename, writeFile } from 'node:fs/promises';
-import { probeMint, type MintTarget, type ProbeDeps } from './probe.ts';
+import { isObject, probeMint, type MintTarget, type ProbeDeps } from './probe.ts';
 import { SCORE, rank } from './score.ts';
 
 type Previous = { mints: Array<{ url: string; history: boolean[] }> };
-
-const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
 
 /** The previous ranking.json as far as it is usable: a broken or foreign file just restarts the history. */
 export function parsePrevious(text: string): Previous {

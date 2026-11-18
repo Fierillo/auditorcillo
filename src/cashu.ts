@@ -1,10 +1,9 @@
 // Adapter: the MintPort operations implemented with cashu-ts. No protocol code lives here.
 import { randomBytes } from 'node:crypto';
 import { Amount, Keyset, Mint, Wallet, hasValidDleq, hashToCurve, type Proof } from '@cashu/cashu-ts';
-import type { MintPort } from './probe.ts';
+import { isObject, type MintPort } from './probe.ts';
 import { assertMintAddresses, assertMintUrl, type MintUrlOptions } from './url.ts';
 
-type RawNut = { supported?: unknown; methods?: unknown[]; disabled?: boolean };
 
 export { assertMintUrl, type MintUrlOptions };
 
@@ -15,9 +14,9 @@ export const NUTS_MAX = 64;
 /** NUT numbers a mint announces in /v1/info: `supported` ones plus NUT-04/05 when enabled with a method.
  * Only distinct plain numbers 0..999, at most NUTS_MAX; anything malformed is ignored. */
 export function announcedNuts(nuts: unknown): number[] {
-  if (typeof nuts !== 'object' || nuts === null || Array.isArray(nuts)) return [];
-  return Object.entries(nuts as Record<string, RawNut | null>)
-    .filter(([n, v]) => /^(0|[1-9]\d{0,2})$/.test(n) && typeof v === 'object' && v !== null && (Array.isArray(v.supported) ? v.supported.length > 0 : v.supported === true || (!!v.methods?.length && !v.disabled)))
+  if (!isObject(nuts) || Array.isArray(nuts)) return [];
+  return Object.entries(nuts)
+    .filter(([n, v]) => /^(0|[1-9]\d{0,2})$/.test(n) && isObject(v) && (Array.isArray(v.supported) ? v.supported.length > 0 : v.supported === true || (Array.isArray(v.methods) && v.methods.length > 0 && !v.disabled)))
     .slice(0, NUTS_MAX)
     .map(([n]) => Number(n));
 }
