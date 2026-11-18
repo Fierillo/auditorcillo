@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { setGlobalRequestOptions } from '@cashu/cashu-ts';
 import { setGlobalDispatcher } from 'undici';
-import { audit, parsePrevious, printRanking, rankingJson, writeAtomic } from './audit.ts';
+import { audit, MINT_TIMEOUT_MS, PAY_TIMEOUT_MS, parsePrevious, printRanking, rankingJson, writeAtomic } from './audit.ts';
 import { cappedFetch, cashuPort } from './cashu.ts';
 import { nwcWallet } from './nwc.ts';
 import { mintAgent } from './url.ts';
@@ -22,8 +22,8 @@ const ranking = await audit(JSON.parse(await readFile(listPath, 'utf8')), {
   now: Date.now,
   sleep: (ms) => sleep(ms),
   amount: 8,
-  payTimeoutMs: 40_000,
-  mintTimeoutMs: 60_000,
+  payTimeoutMs: PAY_TIMEOUT_MS,
+  mintTimeoutMs: MINT_TIMEOUT_MS,
   wallet,
 }, previous);
 await writeAtomic(outPath, rankingJson(ranking));

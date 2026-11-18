@@ -2,7 +2,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { audit, parsePrevious, rankingJson, RANKING_MAX_BYTES, writeAtomic } from '../src/audit.ts';
+import { audit, concurrency, MINT_TIMEOUT_MS, parsePrevious, PAY_TIMEOUT_MS, rankingJson, RANKING_MAX_BYTES, RUN_BUDGET_MS, writeAtomic } from '../src/audit.ts';
 import type { MintPort, ProbeDeps } from '../src/probe.ts';
 import { SCORE } from '../src/score.ts';
 
@@ -70,6 +70,41 @@ describe('audit', () => {
   it('refuses to serialize a ranking larger than the size cap', () => {
     const huge = { generatedAt: 't', weights: SCORE.weights, mints: [{ error: 'x'.repeat(RANKING_MAX_BYTES) }] };
     expect(() => rankingJson(huge as never)).toThrow(/ranking\.json is \d+ bytes, exceeds /);
+  });
+});
+
+describe('run time budget', () => {
+  it('gives every mint the same fixed limit and still fits the run in the budget, inside the workflow timeout', async () => {
+    expect(MINT_TIMEOUT_MS).toBe(60_000);
+    expect(PAY_TIMEOUT_MS).toBeLessThan(MINT_TIMEOUT_MS);
+    const workflow = await readFile(new URL('../.github/workflows/ranking.yml', import.meta.url), 'utf8');
+    const timeoutMinutes = Number(/timeout-minutes:\s*(\d+)/.exec(workflow)?.[1]);
+    expect(RUN_BUDGET_MS + 5 * 60_000).toBeLessThanOrEqual(timeoutMinutes * 60_000);
+    for (const n of [0, 1, 9, 15, 16, 60, 120, 1000]) {
+      const k = concurrency(n, MINT_TIMEOUT_MS);
+      expect(k, String(n)).toBeGreaterThanOrEqual(1);
+      expect(Math.ceil(n / k) * MINT_TIMEOUT_MS, String(n)).toBeLessThanOrEqual(RUN_BUDGET_MS);
+    }
+    expect(concurrency(9, MINT_TIMEOUT_MS)).toBe(1);
+  });
+
+  it('probes as many mints at once as the budget needs, never more', async () => {
+    for (const n of [3, 16, 40]) {
+      let inFlight = 0;
+      let peak = 0;
+      const port = {
+        info: async () => {
+          peak = Math.max(peak, ++inFlight);
+          await new Promise((done) => setTimeout(done, 5));
+          inFlight--;
+          throw new Error('down');
+        },
+      } as unknown as MintPort;
+      const deps: ProbeDeps = { port: () => port, now: Date.now, sleep: async () => {}, amount: 8, payTimeoutMs: 1, mintTimeoutMs: MINT_TIMEOUT_MS };
+      const out = await audit(Array.from({ length: n }, (_, i) => ({ url: `https://m${i}`, cycle: false })), deps);
+      expect(out.mints, String(n)).toHaveLength(n);
+      expect(peak, String(n)).toBe(concurrency(n, MINT_TIMEOUT_MS));
+    }
   });
 });
 
