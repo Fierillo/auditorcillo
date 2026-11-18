@@ -1,6 +1,8 @@
 // Shared URL checks for mint endpoints and mint-provided icon URLs (NUT-06).
+import { lookup as dnsCallbackLookup, type LookupAddress } from 'node:dns';
 import { lookup as dnsLookup } from 'node:dns/promises';
-import { BlockList, isIP } from 'node:net';
+import { BlockList, isIP, type LookupFunction } from 'node:net';
+import { Agent } from 'undici';
 
 export type MintUrlOptions = { allowLocal?: boolean };
 
@@ -55,6 +57,9 @@ export function assertMintUrl(url: string, { allowLocal = false }: MintUrlOption
   if (isPrivateOrReserved(host)) throw new Error(`mint URL must not be a private or reserved address: ${parsed.origin}`);
 }
 
+/** True when a resolved address may be connected to: public, or loopback with `allowLocal`. */
+const allowedAddress = (address: string, allowLocal: boolean) => (isLoopback(address) ? allowLocal : !isPrivateOrReserved(address));
+
 export type Lookup = (host: string, options: { all: true }) => Promise<Array<{ address: string }>>;
 
 /** Resolves the mint host and throws unless every address is public (or loopback with `{ allowLocal: true }`),
@@ -63,9 +68,24 @@ export async function assertMintAddresses(url: string, { allowLocal = false }: M
   const { hostname, origin } = new URL(url);
   const addresses = await lookup(hostname.replace(/^\[|\]$/g, ''), { all: true });
   if (!addresses.length) throw new Error(`mint URL does not resolve: ${origin}`);
-  for (const { address } of addresses) {
-    if (isLoopback(address) ? !allowLocal : isPrivateOrReserved(address)) {
-      throw new Error(`mint URL resolves to a private or reserved address: ${origin}`);
-    }
+  if (!addresses.every(({ address }) => allowedAddress(address, allowLocal))) {
+    throw new Error(`mint URL resolves to a private or reserved address: ${origin}`);
   }
+}
+
+export type CallbackLookup = (host: string, options: { all: true }, callback: (err: Error | null, addresses: LookupAddress[]) => void) => void;
+
+/** HTTP agent that repeats the address check on the lookup of every connection, so a name that passed
+ * assertMintAddresses cannot rebind to an internal address before the request goes out. */
+export function mintAgent({ allowLocal = false }: MintUrlOptions = {}, lookup: CallbackLookup = dnsCallbackLookup): Agent {
+  const guarded: LookupFunction = (host, options, callback) =>
+    lookup(host, { all: true }, (err, addresses) => {
+      if (err) return callback(err, '', 0);
+      if (!addresses.length || !addresses.every(({ address }) => allowedAddress(address, allowLocal))) {
+        return callback(new Error(`mint host resolves to a private or reserved address: ${host}`), '', 0);
+      }
+      if (options.all) return (callback as unknown as (e: null, a: LookupAddress[]) => void)(null, addresses);
+      callback(null, addresses[0].address, addresses[0].family);
+    });
+  return new Agent({ connect: { lookup: guarded } });
 }

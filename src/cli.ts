@@ -3,13 +3,16 @@
 import { readFile } from 'node:fs/promises';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { setGlobalRequestOptions } from '@cashu/cashu-ts';
+import { setGlobalDispatcher } from 'undici';
 import { audit, parsePrevious, printRanking, rankingJson, writeAtomic } from './audit.ts';
 import { cappedFetch, cashuPort } from './cashu.ts';
 import { nwcWallet } from './nwc.ts';
+import { mintAgent } from './url.ts';
 
 const [listPath, outPath] = process.argv.slice(2);
 if (!listPath || !outPath) throw new Error('usage: node src/cli.ts <mints.json> <ranking.json>');
 
+setGlobalDispatcher(mintAgent()); // every connection re-checks the resolved address (DNS rebinding)
 setGlobalRequestOptions({ requestTimeout: 15_000, redirect: 'error' });
 globalThis.fetch = cappedFetch(globalThis.fetch, 1_000_000);
 const wallet = process.env.NWC_URL ? nwcWallet(process.env.NWC_URL) : undefined;

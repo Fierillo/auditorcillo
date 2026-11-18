@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { assertMintAddresses, assertMintUrl } from '../src/url.ts';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { assertMintAddresses, assertMintUrl, mintAgent, type CallbackLookup } from '../src/url.ts';
 import { announcedNuts, cappedFetch, NUTS_MAX } from '../src/cashu.ts';
 
 describe('announcedNuts', () => {
@@ -146,5 +148,37 @@ describe('assertMintAddresses', () => {
     await expect(assertMintAddresses('http://localhost:3391', { allowLocal: true }, lookup)).resolves.toBeUndefined();
     expect(lookup).toHaveBeenCalledWith('localhost', { all: true });
     await expect(assertMintAddresses('http://localhost:3391', { allowLocal: true }, resolves('10.0.0.1'))).rejects.toThrow(/mint URL/);
+  });
+});
+
+describe('mintAgent (connect-time DNS check)', () => {
+  /** A local HTTP server reached through a made-up name that `lookup` resolves to `address`. */
+  async function serveVia(address: string) {
+    const server = createServer((_req, res) => res.end('ok'));
+    await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+    const { port } = server.address() as AddressInfo;
+    const lookup: CallbackLookup = (_host, _options, callback) => callback(null, [{ address, family: 4 }]);
+    return { url: `http://rebind.test:${port}/v1/info`, lookup, close: () => server.close() };
+  }
+
+  it('refuses to connect when the name resolves to a private address at connect time', async () => {
+    const s = await serveVia('127.0.0.1');
+    try {
+      const err = await fetch(s.url, { dispatcher: mintAgent({}, s.lookup) } as RequestInit).catch((e) => e);
+      expect(err).toBeInstanceOf(Error);
+      expect(String(err.cause)).toMatch(/private or reserved address/);
+    } finally {
+      s.close();
+    }
+  });
+
+  it('connects to loopback only with allowLocal', async () => {
+    const s = await serveVia('127.0.0.1');
+    try {
+      const res = await fetch(s.url, { dispatcher: mintAgent({ allowLocal: true }, s.lookup) } as RequestInit);
+      expect(await res.text()).toBe('ok');
+    } finally {
+      s.close();
+    }
   });
 });
