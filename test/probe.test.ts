@@ -26,7 +26,7 @@ function honestPort(clock: Clock, over: Partial<MintPort> = {}): MintPort {
   return {
     info: async () => {
       clock.advance(100);
-      return { name: 'Test', pubkey: '02ab', version: 'cdk/1', description: 'd', contact: [{ method: 'nostr', info: 'npub' }], nuts: [4, 5, 7, 12] };
+      return { name: 'Test', pubkey: `02${'ab'.repeat(32)}`, version: 'cdk/1', description: 'd', contact: [{ method: 'nostr', info: 'npub' }], nuts: [4, 5, 7, 12] };
     },
     keys: async () => {
       clock.advance(300);
@@ -351,6 +351,22 @@ describe('probeMint with malformed /v1/info', () => {
     }
     const mixed = honestPort(clock, { info: async () => ({ name: 'ok', contact: [null, { method: 'nostr', info: 'npub' }], nuts: [4, 5] }) as never });
     expect((await probeMint({ url: 'https://m', cycle: false }, deps(clock, mixed))).info.contact).toBe(true);
+  });
+
+  it('gives info points only for non-empty text and a compressed secp256k1 pubkey', async () => {
+    const clock = fakeClock();
+    const none = { name: false, pubkey: false, version: false, description: false, contact: false };
+    for (const info of [
+      { name: '', pubkey: '', version: '', description: '', nuts: [] },
+      { name: '   ', pubkey: '02ab', version: ' ', description: '\n', nuts: [] },
+      { name: 1, pubkey: true, version: [], description: {}, nuts: [] },
+      { name: 'x', pubkey: `04${'ab'.repeat(32)}`, version: 'v', description: 'd', nuts: [] },
+      { name: 'x', pubkey: `02${'zz'.repeat(32)}`, version: 'v', description: 'd', nuts: [] },
+    ]) {
+      const r = await probeMint({ url: 'https://m', cycle: false }, deps(clock, honestPort(clock, { info: async () => info as never })));
+      const expected = typeof info.name === 'string' && info.name.trim() ? { ...none, name: true, version: true, description: true } : none;
+      expect(r.info, JSON.stringify(info)).toEqual(expected);
+    }
   });
 
   it('reports a mint whose port cannot even be built as failed instead of throwing', async () => {

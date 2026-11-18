@@ -81,9 +81,12 @@ export const MINT_ERROR_MAX = 500;
 export const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
 const clip = (s: string, max: number) => (s.length <= max ? s : s.slice(0, max));
 const mintText = (value: unknown) => (typeof value === 'string' ? clip(value, MINT_TEXT_MAX) : null);
+const filled = (value: unknown) => typeof value === 'string' && value.trim() !== '';
+/** NUT-06 pubkey: a compressed secp256k1 point in hex. */
+const isPubkey = (value: unknown) => typeof value === 'string' && /^0[23][0-9a-f]{64}$/i.test(value);
 /** NUT-06 contact: a list of `{ method, info }`; anything else counts as no contact. */
 const hasContact = (contact: unknown) =>
-  Array.isArray(contact) && contact.some((c) => isObject(c) && typeof c.info === 'string' && c.info !== '');
+  Array.isArray(contact) && contact.some((c) => isObject(c) && filled(c.info));
 
 /** A public https URL no longer than other mint text, or undefined. */
 export function publicHttpsUrl(value: unknown): string | undefined {
@@ -167,10 +170,10 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
   const fromInfo = mintWebsiteUrl(info, target.url);
   if (fromInfo) r.websiteUrl = fromInfo;
   r.info = {
-    name: !!info.name,
-    pubkey: !!info.pubkey,
-    version: !!info.version,
-    description: !!info.description,
+    name: filled(info.name),
+    pubkey: isPubkey(info.pubkey),
+    version: filled(info.version),
+    description: filled(info.description),
     contact: hasContact(info.contact),
   };
 
