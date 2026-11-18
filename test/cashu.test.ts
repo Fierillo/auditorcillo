@@ -70,6 +70,11 @@ describe('assertMintUrl', () => {
       'https://[ff02::1]',
       'https://[::ffff:0:a9fe:a9fe]',
       'https://[::ffff:a9fe:a9fe]',
+      'https://[2002:a9fe:a9fe::1]',
+      'https://[2001:0:4136:e378:8000:63bf:3fff:fdd2]',
+      'https://[64:ff9b:1::a9fe:a9fe]',
+      'https://[fec0::1]',
+      'https://[100::1]',
       'not-a-url',
     ]) {
       expect(() => assertMintUrl(url), url).toThrow(/mint URL/i);

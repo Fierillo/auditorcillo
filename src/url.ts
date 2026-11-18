@@ -5,11 +5,13 @@ import { BlockList, isIP } from 'node:net';
 export type MintUrlOptions = { allowLocal?: boolean };
 
 /** Non-public address ranges (loopback included). BlockList checks IPv4-mapped IPv6 (::ffff:a.b.c.d) against the
- * IPv4 rules; the other IPv6 ranges that embed an IPv4 address (compatible, translated, NAT64) are refused whole. */
+ * IPv4 rules; the other IPv6 ranges that embed an IPv4 address (compatible, translated, NAT64, 6to4, Teredo) are
+ * refused whole, as are site-local and discard-only. */
 const RESERVED = blockList(
   [['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12],
     ['192.0.0.0', 24], ['192.168.0.0', 16], ['198.18.0.0', 15], ['224.0.0.0', 3]],
-  [['::', 96], ['::ffff:0:0:0', 96], ['64:ff9b::', 96], ['fc00::', 7], ['fe80::', 10], ['ff00::', 8]],
+  [['::', 96], ['::ffff:0:0:0', 96], ['64:ff9b::', 96], ['64:ff9b:1::', 48], ['2002::', 16], ['2001::', 32],
+    ['fc00::', 7], ['fe80::', 10], ['fec0::', 10], ['ff00::', 8], ['100::', 64]],
 );
 const LOOPBACK = blockList([['127.0.0.0', 8]], [['::1', 128]]);
 
