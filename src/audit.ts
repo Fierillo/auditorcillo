@@ -21,10 +21,10 @@ export function parsePrevious(text: string): Previous {
 }
 
 /** Writes `path` through a temporary file and a rename, so a crash never leaves it half written. */
-export async function writeAtomic(path: string, text: string, fs: { writeFile(path: string, text: string): Promise<void>; rename(from: string, to: string): Promise<void> } = { writeFile, rename }) {
+export async function writeAtomic(path: string, text: string) {
   const tmp = `${path}.tmp`;
-  await fs.writeFile(tmp, text);
-  await fs.rename(tmp, path);
+  await writeFile(tmp, text);
+  await rename(tmp, path);
 }
 
 /** Probes every mint in order and ranks them: this object is the ranking.json the page reads.
