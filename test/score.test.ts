@@ -78,6 +78,14 @@ describe('score', () => {
       expect(score(o)).toMatchObject({ total: 0, alerts: [name] });
     }
   });
+
+  it('counts a critical check an incomplete probe never reached as failed', () => {
+    expect(score(perfect({ incomplete: true }))).toMatchObject({ total: 0, alerts: ['doubleSpendRejected'] });
+    const reached = perfect({ incomplete: true });
+    reached.checks.doubleSpendRejected = { nut: 3, ok: true };
+    expect(score(reached)).toMatchObject({ total: 100, alerts: [] });
+    expect(score(perfect()).alerts).toEqual([]);
+  });
 });
 
 describe('rank', () => {
