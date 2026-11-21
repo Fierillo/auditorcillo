@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-21T10:58:48.535Z",
+  "generatedAt": "2026-11-21T19:14:01.887Z",
   "weights": {
     "availability": 40,
     "nuts": 30,
@@ -7,91 +7,6 @@
     "info": 10
   },
   "mints": [
-    {
-      "url": "https://mint.cubabitcoin.org",
-      "name": "Mint Cuba Bitcoin",
-      "version": "Nutshell/0.22.1",
-      "nuts": [
-        4,
-        5,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        14,
-        15,
-        17,
-        20,
-        29
-      ],
-      "checkedAt": "2026-11-21T10:59:08.782Z",
-      "online": true,
-      "latencyMs": 83,
-      "info": {
-        "name": true,
-        "pubkey": true,
-        "version": true,
-        "description": true,
-        "contact": true
-      },
-      "checks": {
-        "keysetIds": {
-          "nut": 2,
-          "ok": true
-        },
-        "keysetsListed": {
-          "nut": 2,
-          "ok": true
-        },
-        "mintQuote": {
-          "nut": 4,
-          "ok": true
-        },
-        "meltQuote": {
-          "nut": 5,
-          "ok": true
-        },
-        "checkState": {
-          "nut": 7,
-          "ok": true
-        }
-      },
-      "error": null,
-      "websiteUrl": "https://mint.cubabitcoin.org",
-      "iconUrl": "https://image.nostr.build/851be21e07223c5cb91dd32cc1bc0b01321ad0d5fb2e428273c1ee85781b5e87.jpg",
-      "history": [
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true
-      ],
-      "uptime": 100,
-      "score": {
-        "total": 100,
-        "parts": {
-          "availability": 40,
-          "nuts": 30,
-          "keysets": 20,
-          "info": 10
-        },
-        "alerts": []
-      }
-    },
     {
       "url": "https://mint.coinos.io",
       "name": "Coinos",
@@ -111,9 +26,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-21T10:59:12.020Z",
+      "checkedAt": "2026-11-21T19:14:27.183Z",
       "online": true,
-      "latencyMs": 95,
+      "latencyMs": 57,
       "info": {
         "name": true,
         "pubkey": true,
@@ -163,6 +78,7 @@
         true,
         true,
         true,
+        true,
         true
       ],
       "uptime": 100,
@@ -196,9 +112,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-21T10:59:03.803Z",
+      "checkedAt": "2026-11-21T19:14:18.864Z",
       "online": true,
-      "latencyMs": 137,
+      "latencyMs": 185,
       "info": {
         "name": true,
         "pubkey": true,
@@ -248,6 +164,7 @@
         true,
         true,
         true,
+        true,
         true
       ],
       "uptime": 100,
@@ -281,9 +198,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-21T10:59:05.405Z",
+      "checkedAt": "2026-11-21T19:14:20.424Z",
       "online": true,
-      "latencyMs": 142,
+      "latencyMs": 188,
       "info": {
         "name": true,
         "pubkey": true,
@@ -333,6 +250,7 @@
         true,
         true,
         true,
+        true,
         true
       ],
       "uptime": 100,
@@ -366,9 +284,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-21T10:59:07.083Z",
+      "checkedAt": "2026-11-21T19:14:21.969Z",
       "online": true,
-      "latencyMs": 195,
+      "latencyMs": 197,
       "info": {
         "name": true,
         "pubkey": true,
@@ -418,6 +336,93 @@
         true,
         true,
         true,
+        true,
+        true
+      ],
+      "uptime": 100,
+      "score": {
+        "total": 100,
+        "parts": {
+          "availability": 40,
+          "nuts": 30,
+          "keysets": 20,
+          "info": 10
+        },
+        "alerts": []
+      }
+    },
+    {
+      "url": "https://mint.cubabitcoin.org",
+      "name": "Mint Cuba Bitcoin",
+      "version": "Nutshell/0.22.1",
+      "nuts": [
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        14,
+        15,
+        17,
+        20,
+        29
+      ],
+      "checkedAt": "2026-11-21T19:14:23.472Z",
+      "online": true,
+      "latencyMs": 231,
+      "info": {
+        "name": true,
+        "pubkey": true,
+        "version": true,
+        "description": true,
+        "contact": true
+      },
+      "checks": {
+        "keysetIds": {
+          "nut": 2,
+          "ok": true
+        },
+        "keysetsListed": {
+          "nut": 2,
+          "ok": true
+        },
+        "mintQuote": {
+          "nut": 4,
+          "ok": true
+        },
+        "meltQuote": {
+          "nut": 5,
+          "ok": true
+        },
+        "checkState": {
+          "nut": 7,
+          "ok": true
+        }
+      },
+      "error": null,
+      "websiteUrl": "https://mint.cubabitcoin.org",
+      "iconUrl": "https://image.nostr.build/851be21e07223c5cb91dd32cc1bc0b01321ad0d5fb2e428273c1ee85781b5e87.jpg",
+      "history": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
         true
       ],
       "uptime": 100,
@@ -450,9 +455,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-21T10:59:09.493Z",
+      "checkedAt": "2026-11-21T19:14:24.494Z",
       "online": true,
-      "latencyMs": 172,
+      "latencyMs": 203,
       "info": {
         "name": true,
         "pubkey": true,
@@ -485,6 +490,7 @@
       "error": null,
       "websiteUrl": "https://mint.cashu.chat",
       "history": [
+        true,
         true,
         true,
         true,
@@ -534,9 +540,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-21T10:58:48.536Z",
+      "checkedAt": "2026-11-21T19:14:01.888Z",
       "online": true,
-      "latencyMs": 181,
+      "latencyMs": 218,
       "info": {
         "name": true,
         "pubkey": true,
@@ -610,13 +616,14 @@
         true,
         true,
         true,
+        true,
         true
       ],
       "uptime": 94,
       "score": {
-        "total": 95.6,
+        "total": 95.8,
         "parts": {
-          "availability": 37.64705882352941,
+          "availability": 37.77777777777778,
           "nuts": 30,
           "keysets": 20,
           "info": 8
@@ -629,7 +636,7 @@
       "name": null,
       "version": null,
       "nuts": [],
-      "checkedAt": "2026-11-21T10:59:03.417Z",
+      "checkedAt": "2026-11-21T19:14:17.488Z",
       "online": false,
       "latencyMs": null,
       "info": {},
@@ -637,6 +644,7 @@
       "error": "fetch failed (getaddrinfo ENOTFOUND nofee.testnut.cashu.space, ENOTFOUND) at https://nofee.testnut.cashu.space",
       "websiteUrl": "https://nofee.testnut.cashu.space",
       "history": [
+        false,
         false,
         false,
         false,
@@ -672,7 +680,7 @@
       "name": null,
       "version": null,
       "nuts": [],
-      "checkedAt": "2026-11-21T10:59:03.457Z",
+      "checkedAt": "2026-11-21T19:14:17.514Z",
       "online": false,
       "latencyMs": null,
       "info": {},
@@ -680,6 +688,7 @@
       "error": "fetch failed (getaddrinfo ENOTFOUND fake.thesimplekid.dev, ENOTFOUND) at https://fake.thesimplekid.dev",
       "websiteUrl": "https://fake.thesimplekid.dev",
       "history": [
+        false,
         false,
         false,
         false,
