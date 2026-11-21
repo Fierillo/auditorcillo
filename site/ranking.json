@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-21T02:12:26.176Z",
+  "generatedAt": "2026-11-21T10:58:48.535Z",
   "weights": {
     "availability": 40,
     "nuts": 30,
@@ -7,90 +7,6 @@
     "info": 10
   },
   "mints": [
-    {
-      "url": "https://mint.coinos.io",
-      "name": "Coinos",
-      "version": "Nutshell/0.22.1",
-      "nuts": [
-        4,
-        5,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        14,
-        15,
-        17,
-        20,
-        29
-      ],
-      "checkedAt": "2026-11-21T02:12:50.586Z",
-      "online": true,
-      "latencyMs": 49,
-      "info": {
-        "name": true,
-        "pubkey": true,
-        "version": true,
-        "description": true,
-        "contact": true
-      },
-      "checks": {
-        "keysetIds": {
-          "nut": 2,
-          "ok": true
-        },
-        "keysetsListed": {
-          "nut": 2,
-          "ok": true
-        },
-        "mintQuote": {
-          "nut": 4,
-          "ok": true
-        },
-        "meltQuote": {
-          "nut": 5,
-          "ok": true
-        },
-        "checkState": {
-          "nut": 7,
-          "ok": true
-        }
-      },
-      "error": null,
-      "websiteUrl": "https://mint.coinos.io",
-      "iconUrl": "https://coinos.io/images/icon.png",
-      "history": [
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true
-      ],
-      "uptime": 100,
-      "score": {
-        "total": 100,
-        "parts": {
-          "availability": 40,
-          "nuts": 30,
-          "keysets": 20,
-          "info": 10
-        },
-        "alerts": []
-      }
-    },
     {
       "url": "https://mint.cubabitcoin.org",
       "name": "Mint Cuba Bitcoin",
@@ -110,9 +26,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-21T02:12:47.498Z",
+      "checkedAt": "2026-11-21T10:59:08.782Z",
       "online": true,
-      "latencyMs": 95,
+      "latencyMs": 83,
       "info": {
         "name": true,
         "pubkey": true,
@@ -161,6 +77,92 @@
         true,
         true,
         true,
+        true,
+        true
+      ],
+      "uptime": 100,
+      "score": {
+        "total": 100,
+        "parts": {
+          "availability": 40,
+          "nuts": 30,
+          "keysets": 20,
+          "info": 10
+        },
+        "alerts": []
+      }
+    },
+    {
+      "url": "https://mint.coinos.io",
+      "name": "Coinos",
+      "version": "Nutshell/0.22.1",
+      "nuts": [
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        14,
+        15,
+        17,
+        20,
+        29
+      ],
+      "checkedAt": "2026-11-21T10:59:12.020Z",
+      "online": true,
+      "latencyMs": 95,
+      "info": {
+        "name": true,
+        "pubkey": true,
+        "version": true,
+        "description": true,
+        "contact": true
+      },
+      "checks": {
+        "keysetIds": {
+          "nut": 2,
+          "ok": true
+        },
+        "keysetsListed": {
+          "nut": 2,
+          "ok": true
+        },
+        "mintQuote": {
+          "nut": 4,
+          "ok": true
+        },
+        "meltQuote": {
+          "nut": 5,
+          "ok": true
+        },
+        "checkState": {
+          "nut": 7,
+          "ok": true
+        }
+      },
+      "error": null,
+      "websiteUrl": "https://mint.coinos.io",
+      "iconUrl": "https://coinos.io/images/icon.png",
+      "history": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
         true
       ],
       "uptime": 100,
@@ -194,9 +196,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-21T02:12:42.402Z",
+      "checkedAt": "2026-11-21T10:59:03.803Z",
       "online": true,
-      "latencyMs": 157,
+      "latencyMs": 137,
       "info": {
         "name": true,
         "pubkey": true,
@@ -245,89 +247,6 @@
         true,
         true,
         true,
-        true
-      ],
-      "uptime": 100,
-      "score": {
-        "total": 100,
-        "parts": {
-          "availability": 40,
-          "nuts": 30,
-          "keysets": 20,
-          "info": 10
-        },
-        "alerts": []
-      }
-    },
-    {
-      "url": "https://21mint.me",
-      "name": "21Mint",
-      "version": "Nutshell/0.21.0",
-      "nuts": [
-        4,
-        5,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        14,
-        15,
-        17,
-        20,
-        29
-      ],
-      "checkedAt": "2026-11-21T02:12:46.043Z",
-      "online": true,
-      "latencyMs": 157,
-      "info": {
-        "name": true,
-        "pubkey": true,
-        "version": true,
-        "description": true,
-        "contact": true
-      },
-      "checks": {
-        "keysetIds": {
-          "nut": 2,
-          "ok": true
-        },
-        "keysetsListed": {
-          "nut": 2,
-          "ok": true
-        },
-        "mintQuote": {
-          "nut": 4,
-          "ok": true
-        },
-        "meltQuote": {
-          "nut": 5,
-          "ok": true
-        },
-        "checkState": {
-          "nut": 7,
-          "ok": true
-        }
-      },
-      "error": null,
-      "websiteUrl": "https://21mint.me",
-      "iconUrl": "https://cdn.nostrcheck.me/8c382ee1f0df71548ca203063c0def8da4a84c6add3b43caa8469d1e3732cce7/f7168979ea9ba910daff503bdc3e7302d27a3fdbb8c90ee4a8d1abcd80ee255b.webp",
-      "history": [
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
         true,
         true
       ],
@@ -362,9 +281,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-21T02:12:44.223Z",
+      "checkedAt": "2026-11-21T10:59:05.405Z",
       "online": true,
-      "latencyMs": 163,
+      "latencyMs": 142,
       "info": {
         "name": true,
         "pubkey": true,
@@ -413,6 +332,92 @@
         true,
         true,
         true,
+        true,
+        true
+      ],
+      "uptime": 100,
+      "score": {
+        "total": 100,
+        "parts": {
+          "availability": 40,
+          "nuts": 30,
+          "keysets": 20,
+          "info": 10
+        },
+        "alerts": []
+      }
+    },
+    {
+      "url": "https://21mint.me",
+      "name": "21Mint",
+      "version": "Nutshell/0.21.0",
+      "nuts": [
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        14,
+        15,
+        17,
+        20,
+        29
+      ],
+      "checkedAt": "2026-11-21T10:59:07.083Z",
+      "online": true,
+      "latencyMs": 195,
+      "info": {
+        "name": true,
+        "pubkey": true,
+        "version": true,
+        "description": true,
+        "contact": true
+      },
+      "checks": {
+        "keysetIds": {
+          "nut": 2,
+          "ok": true
+        },
+        "keysetsListed": {
+          "nut": 2,
+          "ok": true
+        },
+        "mintQuote": {
+          "nut": 4,
+          "ok": true
+        },
+        "meltQuote": {
+          "nut": 5,
+          "ok": true
+        },
+        "checkState": {
+          "nut": 7,
+          "ok": true
+        }
+      },
+      "error": null,
+      "websiteUrl": "https://21mint.me",
+      "iconUrl": "https://cdn.nostrcheck.me/8c382ee1f0df71548ca203063c0def8da4a84c6add3b43caa8469d1e3732cce7/f7168979ea9ba910daff503bdc3e7302d27a3fdbb8c90ee4a8d1abcd80ee255b.webp",
+      "history": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
         true
       ],
       "uptime": 100,
@@ -445,9 +450,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-21T02:12:48.272Z",
+      "checkedAt": "2026-11-21T10:59:09.493Z",
       "online": true,
-      "latencyMs": 153,
+      "latencyMs": 172,
       "info": {
         "name": true,
         "pubkey": true,
@@ -480,6 +485,7 @@
       "error": null,
       "websiteUrl": "https://mint.cashu.chat",
       "history": [
+        true,
         true,
         true,
         true,
@@ -528,9 +534,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-21T02:12:26.177Z",
+      "checkedAt": "2026-11-21T10:58:48.536Z",
       "online": true,
-      "latencyMs": 209,
+      "latencyMs": 181,
       "info": {
         "name": true,
         "pubkey": true,
@@ -603,13 +609,14 @@
         true,
         true,
         true,
+        true,
         true
       ],
       "uptime": 94,
       "score": {
-        "total": 95.5,
+        "total": 95.6,
         "parts": {
-          "availability": 37.5,
+          "availability": 37.64705882352941,
           "nuts": 30,
           "keysets": 20,
           "info": 8
@@ -622,7 +629,7 @@
       "name": null,
       "version": null,
       "nuts": [],
-      "checkedAt": "2026-11-21T02:12:42.145Z",
+      "checkedAt": "2026-11-21T10:59:03.417Z",
       "online": false,
       "latencyMs": null,
       "info": {},
@@ -630,6 +637,7 @@
       "error": "fetch failed (getaddrinfo ENOTFOUND nofee.testnut.cashu.space, ENOTFOUND) at https://nofee.testnut.cashu.space",
       "websiteUrl": "https://nofee.testnut.cashu.space",
       "history": [
+        false,
         false,
         false,
         false,
@@ -664,7 +672,7 @@
       "name": null,
       "version": null,
       "nuts": [],
-      "checkedAt": "2026-11-21T02:12:42.173Z",
+      "checkedAt": "2026-11-21T10:59:03.457Z",
       "online": false,
       "latencyMs": null,
       "info": {},
@@ -672,6 +680,7 @@
       "error": "fetch failed (getaddrinfo ENOTFOUND fake.thesimplekid.dev, ENOTFOUND) at https://fake.thesimplekid.dev",
       "websiteUrl": "https://fake.thesimplekid.dev",
       "history": [
+        false,
         false,
         false,
         false,
