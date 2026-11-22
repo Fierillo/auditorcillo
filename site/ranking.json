@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-22T01:17:36.446Z",
+  "generatedAt": "2026-11-22T11:21:23.550Z",
   "weights": {
     "availability": 40,
     "nuts": 30,
@@ -26,9 +26,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-22T01:17:56.221Z",
+      "checkedAt": "2026-11-22T11:21:33.051Z",
       "online": true,
-      "latencyMs": 46,
+      "latencyMs": 43,
       "info": {
         "name": true,
         "pubkey": true,
@@ -80,92 +80,6 @@
         true,
         true,
         true,
-        true
-      ],
-      "uptime": 100,
-      "score": {
-        "total": 100,
-        "parts": {
-          "availability": 40,
-          "nuts": 30,
-          "keysets": 20,
-          "info": 10
-        },
-        "alerts": []
-      }
-    },
-    {
-      "url": "https://mint.coinos.io",
-      "name": "Coinos",
-      "version": "Nutshell/0.22.1",
-      "nuts": [
-        4,
-        5,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        14,
-        15,
-        17,
-        20,
-        29
-      ],
-      "checkedAt": "2026-11-22T01:17:59.480Z",
-      "online": true,
-      "latencyMs": 109,
-      "info": {
-        "name": true,
-        "pubkey": true,
-        "version": true,
-        "description": true,
-        "contact": true
-      },
-      "checks": {
-        "keysetIds": {
-          "nut": 2,
-          "ok": true
-        },
-        "keysetsListed": {
-          "nut": 2,
-          "ok": true
-        },
-        "mintQuote": {
-          "nut": 4,
-          "ok": true
-        },
-        "meltQuote": {
-          "nut": 5,
-          "ok": true
-        },
-        "checkState": {
-          "nut": 7,
-          "ok": true
-        }
-      },
-      "error": null,
-      "websiteUrl": "https://mint.coinos.io",
-      "iconUrl": "https://coinos.io/images/icon.png",
-      "history": [
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
         true,
         true
       ],
@@ -200,9 +114,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-22T01:17:51.991Z",
+      "checkedAt": "2026-11-22T11:21:29.727Z",
       "online": true,
-      "latencyMs": 114,
+      "latencyMs": 94,
       "info": {
         "name": true,
         "pubkey": true,
@@ -254,6 +168,7 @@
         true,
         true,
         true,
+        true,
         true
       ],
       "uptime": 100,
@@ -287,9 +202,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-22T01:17:53.536Z",
+      "checkedAt": "2026-11-22T11:21:30.823Z",
       "online": true,
-      "latencyMs": 120,
+      "latencyMs": 99,
       "info": {
         "name": true,
         "pubkey": true,
@@ -341,6 +256,95 @@
         true,
         true,
         true,
+        true,
+        true
+      ],
+      "uptime": 100,
+      "score": {
+        "total": 100,
+        "parts": {
+          "availability": 40,
+          "nuts": 30,
+          "keysets": 20,
+          "info": 10
+        },
+        "alerts": []
+      }
+    },
+    {
+      "url": "https://mint.coinos.io",
+      "name": "Coinos",
+      "version": "Nutshell/0.22.1",
+      "nuts": [
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        14,
+        15,
+        17,
+        20,
+        29
+      ],
+      "checkedAt": "2026-11-22T11:21:36.409Z",
+      "online": true,
+      "latencyMs": 115,
+      "info": {
+        "name": true,
+        "pubkey": true,
+        "version": true,
+        "description": true,
+        "contact": true
+      },
+      "checks": {
+        "keysetIds": {
+          "nut": 2,
+          "ok": true
+        },
+        "keysetsListed": {
+          "nut": 2,
+          "ok": true
+        },
+        "mintQuote": {
+          "nut": 4,
+          "ok": true
+        },
+        "meltQuote": {
+          "nut": 5,
+          "ok": true
+        },
+        "checkState": {
+          "nut": 7,
+          "ok": true
+        }
+      },
+      "error": null,
+      "websiteUrl": "https://mint.coinos.io",
+      "iconUrl": "https://coinos.io/images/icon.png",
+      "history": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
         true
       ],
       "uptime": 100,
@@ -374,9 +378,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-22T01:17:55.094Z",
+      "checkedAt": "2026-11-22T11:21:32.102Z",
       "online": true,
-      "latencyMs": 143,
+      "latencyMs": 127,
       "info": {
         "name": true,
         "pubkey": true,
@@ -428,6 +432,7 @@
         true,
         true,
         true,
+        true,
         true
       ],
       "uptime": 100,
@@ -460,9 +465,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-22T01:17:56.675Z",
+      "checkedAt": "2026-11-22T11:21:33.617Z",
       "online": true,
-      "latencyMs": 199,
+      "latencyMs": 215,
       "info": {
         "name": true,
         "pubkey": true,
@@ -495,6 +500,7 @@
       "error": null,
       "websiteUrl": "https://mint.cashu.chat",
       "history": [
+        true,
         true,
         true,
         true,
@@ -546,9 +552,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-22T01:17:36.447Z",
+      "checkedAt": "2026-11-22T11:21:23.551Z",
       "online": true,
-      "latencyMs": 147,
+      "latencyMs": 133,
       "info": {
         "name": true,
         "pubkey": true,
@@ -624,13 +630,14 @@
         true,
         true,
         true,
+        true,
         true
       ],
       "uptime": 95,
       "score": {
-        "total": 95.9,
+        "total": 96,
         "parts": {
-          "availability": 37.89473684210526,
+          "availability": 38,
           "nuts": 30,
           "keysets": 20,
           "info": 8
@@ -643,7 +650,7 @@
       "name": null,
       "version": null,
       "nuts": [],
-      "checkedAt": "2026-11-22T01:17:51.541Z",
+      "checkedAt": "2026-11-22T11:21:29.405Z",
       "online": false,
       "latencyMs": null,
       "info": {},
@@ -651,6 +658,7 @@
       "error": "fetch failed (getaddrinfo ENOTFOUND nofee.testnut.cashu.space, ENOTFOUND) at https://nofee.testnut.cashu.space",
       "websiteUrl": "https://nofee.testnut.cashu.space",
       "history": [
+        false,
         false,
         false,
         false,
@@ -688,7 +696,7 @@
       "name": null,
       "version": null,
       "nuts": [],
-      "checkedAt": "2026-11-22T01:17:51.657Z",
+      "checkedAt": "2026-11-22T11:21:29.455Z",
       "online": false,
       "latencyMs": null,
       "info": {},
@@ -696,6 +704,7 @@
       "error": "fetch failed (getaddrinfo ENOTFOUND fake.thesimplekid.dev, ENOTFOUND) at https://fake.thesimplekid.dev",
       "websiteUrl": "https://fake.thesimplekid.dev",
       "history": [
+        false,
         false,
         false,
         false,
