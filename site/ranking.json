@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-24T02:12:32.779Z",
+  "generatedAt": "2026-11-24T13:40:22.793Z",
   "weights": {
     "availability": 40,
     "nuts": 30,
@@ -7,98 +7,6 @@
     "info": 10
   },
   "mints": [
-    {
-      "url": "https://mint.coinos.io",
-      "name": "Coinos",
-      "version": "Nutshell/0.22.1",
-      "nuts": [
-        4,
-        5,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        14,
-        15,
-        17,
-        20,
-        29
-      ],
-      "checkedAt": "2026-11-24T02:12:57.742Z",
-      "online": true,
-      "latencyMs": 62,
-      "info": {
-        "name": true,
-        "pubkey": true,
-        "version": true,
-        "description": true,
-        "contact": true
-      },
-      "checks": {
-        "keysetIds": {
-          "nut": 2,
-          "ok": true
-        },
-        "keysetsListed": {
-          "nut": 2,
-          "ok": true
-        },
-        "mintQuote": {
-          "nut": 4,
-          "ok": true
-        },
-        "meltQuote": {
-          "nut": 5,
-          "ok": true
-        },
-        "checkState": {
-          "nut": 7,
-          "ok": true
-        }
-      },
-      "error": null,
-      "websiteUrl": "https://mint.coinos.io",
-      "iconUrl": "https://coinos.io/images/icon.png",
-      "history": [
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true
-      ],
-      "uptime": 100,
-      "score": {
-        "total": 100,
-        "parts": {
-          "availability": 40,
-          "nuts": 30,
-          "keysets": 20,
-          "info": 10
-        },
-        "alerts": []
-      }
-    },
     {
       "url": "https://mint.cubabitcoin.org",
       "name": "Mint Cuba Bitcoin",
@@ -118,9 +26,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-24T02:12:54.119Z",
+      "checkedAt": "2026-11-24T13:40:43.915Z",
       "online": true,
-      "latencyMs": 98,
+      "latencyMs": 65,
       "info": {
         "name": true,
         "pubkey": true,
@@ -177,6 +85,100 @@
         true,
         true,
         true,
+        true,
+        true
+      ],
+      "uptime": 100,
+      "score": {
+        "total": 100,
+        "parts": {
+          "availability": 40,
+          "nuts": 30,
+          "keysets": 20,
+          "info": 10
+        },
+        "alerts": []
+      }
+    },
+    {
+      "url": "https://mint.coinos.io",
+      "name": "Coinos",
+      "version": "Nutshell/0.22.1",
+      "nuts": [
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        14,
+        15,
+        17,
+        20,
+        29
+      ],
+      "checkedAt": "2026-11-24T13:40:47.452Z",
+      "online": true,
+      "latencyMs": 102,
+      "info": {
+        "name": true,
+        "pubkey": true,
+        "version": true,
+        "description": true,
+        "contact": true
+      },
+      "checks": {
+        "keysetIds": {
+          "nut": 2,
+          "ok": true
+        },
+        "keysetsListed": {
+          "nut": 2,
+          "ok": true
+        },
+        "mintQuote": {
+          "nut": 4,
+          "ok": true
+        },
+        "meltQuote": {
+          "nut": 5,
+          "ok": true
+        },
+        "checkState": {
+          "nut": 7,
+          "ok": true
+        }
+      },
+      "error": null,
+      "websiteUrl": "https://mint.coinos.io",
+      "iconUrl": "https://coinos.io/images/icon.png",
+      "history": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
         true
       ],
       "uptime": 100,
@@ -210,9 +212,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-24T02:12:49.689Z",
+      "checkedAt": "2026-11-24T13:40:39.674Z",
       "online": true,
-      "latencyMs": 155,
+      "latencyMs": 123,
       "info": {
         "name": true,
         "pubkey": true,
@@ -269,6 +271,7 @@
         true,
         true,
         true,
+        true,
         true
       ],
       "uptime": 100,
@@ -302,9 +305,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-24T02:12:51.192Z",
+      "checkedAt": "2026-11-24T13:40:41.240Z",
       "online": true,
-      "latencyMs": 160,
+      "latencyMs": 126,
       "info": {
         "name": true,
         "pubkey": true,
@@ -361,6 +364,7 @@
         true,
         true,
         true,
+        true,
         true
       ],
       "uptime": 100,
@@ -394,9 +398,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-24T02:12:52.706Z",
+      "checkedAt": "2026-11-24T13:40:42.709Z",
       "online": true,
-      "latencyMs": 184,
+      "latencyMs": 159,
       "info": {
         "name": true,
         "pubkey": true,
@@ -453,6 +457,7 @@
         true,
         true,
         true,
+        true,
         true
       ],
       "uptime": 100,
@@ -485,9 +490,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-24T02:12:55.059Z",
+      "checkedAt": "2026-11-24T13:40:44.547Z",
       "online": true,
-      "latencyMs": 162,
+      "latencyMs": 186,
       "info": {
         "name": true,
         "pubkey": true,
@@ -520,6 +525,7 @@
       "error": null,
       "websiteUrl": "https://mint.cashu.chat",
       "history": [
+        true,
         true,
         true,
         true,
@@ -576,9 +582,9 @@
         20,
         29
       ],
-      "checkedAt": "2026-11-24T02:12:32.780Z",
+      "checkedAt": "2026-11-24T13:40:22.794Z",
       "online": true,
-      "latencyMs": 211,
+      "latencyMs": 187,
       "info": {
         "name": true,
         "pubkey": true,
@@ -629,11 +635,10 @@
         },
         "spentState": {
           "nut": 7,
-          "ok": false,
-          "error": "fetch failed (read ECONNRESET, ECONNRESET) at https://testnut.cashu.space"
+          "ok": true
         }
       },
-      "error": "spentState: fetch failed (read ECONNRESET, ECONNRESET) at https://testnut.cashu.space",
+      "error": null,
       "websiteUrl": "https://testnut.cashu.space",
       "iconUrl": "https://image.nostr.build/46ee47763c345d2cfa3317f042d332003f498ee281fb42808d47a7d3b9585911.png",
       "history": [
@@ -660,14 +665,15 @@
         true,
         true,
         true,
+        true,
         true
       ],
       "uptime": 96,
       "score": {
-        "total": 93,
+        "total": 96.4,
         "parts": {
-          "availability": 38.333333333333336,
-          "nuts": 26.666666666666664,
+          "availability": 38.4,
+          "nuts": 30,
           "keysets": 20,
           "info": 8
         },
@@ -679,7 +685,7 @@
       "name": null,
       "version": null,
       "nuts": [],
-      "checkedAt": "2026-11-24T02:12:48.917Z",
+      "checkedAt": "2026-11-24T13:40:39.111Z",
       "online": false,
       "latencyMs": null,
       "info": {},
@@ -687,6 +693,7 @@
       "error": "fetch failed (getaddrinfo ENOTFOUND nofee.testnut.cashu.space, ENOTFOUND) at https://nofee.testnut.cashu.space",
       "websiteUrl": "https://nofee.testnut.cashu.space",
       "history": [
+        false,
         false,
         false,
         false,
@@ -729,7 +736,7 @@
       "name": null,
       "version": null,
       "nuts": [],
-      "checkedAt": "2026-11-24T02:12:48.957Z",
+      "checkedAt": "2026-11-24T13:40:39.297Z",
       "online": false,
       "latencyMs": null,
       "info": {},
@@ -737,6 +744,7 @@
       "error": "fetch failed (getaddrinfo ENOTFOUND fake.thesimplekid.dev, ENOTFOUND) at https://fake.thesimplekid.dev",
       "websiteUrl": "https://fake.thesimplekid.dev",
       "history": [
+        false,
         false,
         false,
         false,
