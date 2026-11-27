@@ -449,9 +449,10 @@ describe('flaggedMintsJson', () => {
     expect(rankingWorkflow).toMatch(/git add site\/ranking\.json mints\.json/);
   });
 
-  it('checks out master, the production branch, whatever branch the run starts from', () => {
+  it('runs only from master, the production branch, so the plain checkout already is master', () => {
+    expect(rankingWorkflow).toMatch(/^ {4}if: github\.ref == 'refs\/heads\/master'$/m);
     const checkout = rankingSteps.find((s) => s.startsWith('uses: actions/checkout@')) ?? '';
-    expect(checkout).toMatch(/^\s+ref: master$/m);
+    expect(checkout).not.toMatch(/^\s+ref:/m);
   });
 
   describe('commit step against a master that moved during the run', () => {
