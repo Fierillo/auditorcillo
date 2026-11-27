@@ -561,12 +561,12 @@ describe('parsePrevious', () => {
 describe('writeAtomic', () => {
   it('replaces the target with the full text and leaves no temporary file behind', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'auditorcillo-'));
+    onTestFinished(() => rm(dir, { recursive: true, force: true }));
     const path = join(dir, 'ranking.json');
     await writeFile(path, 'old');
     await writeAtomic(path, '{}\n');
     expect(await readFile(path, 'utf8')).toBe('{}\n');
     expect(await readdir(dir)).toEqual(['ranking.json']);
-    await rm(dir, { recursive: true });
   });
 });
 
