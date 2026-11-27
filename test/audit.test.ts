@@ -447,6 +447,12 @@ describe('flaggedMintsJson', () => {
   it('is committed by the ranking workflow next to ranking.json', () => {
     expect(rankingWorkflow).toMatch(/git add site\/ranking\.json mints\.json/);
   });
+
+  it('checks out and pushes master, the production branch, whatever branch the run starts from', () => {
+    const checkout = rankingSteps.find((s) => s.startsWith('uses: actions/checkout@')) ?? '';
+    expect(checkout).toMatch(/^\s+ref: master$/m);
+    expect(rankingWorkflow).toMatch(/push origin HEAD:master$/m);
+  });
 });
 
 describe('parsePrevious', () => {
