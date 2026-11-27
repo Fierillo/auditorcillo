@@ -50,9 +50,18 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add site/ranking.json mints.json
-          git diff --cached --quiet || {
-            git commit -m 'chore: update mint ranking'
-            auth=$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)
-            echo "::add-mask::$auth"
-            git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $auth" push origin HEAD:master
-          }
+          git diff --cached --quiet && exit 0
+          git commit -m 'chore: update mint ranking'
+          auth=$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          authed() { git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $auth" "$@"; }
+          # master can move during the run (a promotion from dev), so rebase on it before pushing, a few times at most.
+          for _ in 1 2 3; do
+            if authed pull --rebase origin master; then
+              authed push origin HEAD:master && exit 0
+            # A conflict means master changed the same files: stop rather than guess which flags to keep.
+            elif git rebase --abort 2>/dev/null; then
+              exit 1
+            fi
+          done
+          exit 1

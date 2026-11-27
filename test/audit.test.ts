@@ -1,7 +1,8 @@
-import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 import { audit, concurrency, flaggedMintsJson, isPaidRun, MAX_PAYMENT_CONCURRENCY, MINT_TIMEOUT_MS, parsePrevious, PAY_TIMEOUT_MS, rankingJson, RANKING_MAX_BYTES, RUN_BUDGET_MS, writeAtomic } from '../src/audit.ts';
 import { NotPaid, type MintPort, type ProbeDeps } from '../src/probe.ts';
 import { SCORE } from '../src/score.ts';
@@ -448,10 +449,60 @@ describe('flaggedMintsJson', () => {
     expect(rankingWorkflow).toMatch(/git add site\/ranking\.json mints\.json/);
   });
 
-  it('checks out and pushes master, the production branch, whatever branch the run starts from', () => {
+  it('checks out master, the production branch, whatever branch the run starts from', () => {
     const checkout = rankingSteps.find((s) => s.startsWith('uses: actions/checkout@')) ?? '';
     expect(checkout).toMatch(/^\s+ref: master$/m);
-    expect(rankingWorkflow).toMatch(/push origin HEAD:master$/m);
+  });
+
+  describe('commit step against a master that moved during the run', () => {
+    const commitScript = (rankingSteps.find((s) => s.startsWith('name: Commit ranking')) ?? '')
+      .split('run: |\n')[1]!
+      .replace(/^ {10}/gm, '');
+    const env = { PATH: process.env.PATH, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', GITHUB_TOKEN: 'test-token' };
+    const git = (cwd: string, ...args: string[]) =>
+      execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd, env, encoding: 'utf8', stdio: 'pipe' }).trim();
+    // Runs the step as Actions does (bash -eo pipefail) in a runner clone with a new ranking, and someone else's commit already on master that touches `file`.
+    const setup = async (file: string) => {
+      const dir = await mkdtemp(join(tmpdir(), 'auditorcillo-push-'));
+      onTestFinished(() => rm(dir, { recursive: true, force: true }));
+      git(dir, 'init', '-q', '--bare', '-b', 'master', 'origin.git');
+      git(dir, 'clone', '-q', 'origin.git', 'seed');
+      await mkdir(join(dir, 'seed', 'site'));
+      await writeFile(join(dir, 'seed', 'mints.json'), '[]\n');
+      await writeFile(join(dir, 'seed', 'README.md'), 'r\n');
+      await writeFile(join(dir, 'seed', 'site', 'ranking.json'), '{}\n');
+      git(join(dir, 'seed'), 'add', 'mints.json', 'README.md', 'site/ranking.json');
+      git(join(dir, 'seed'), 'commit', '-qm', 'seed');
+      git(join(dir, 'seed'), 'push', '-q', 'origin', 'HEAD:master');
+      git(dir, 'clone', '-q', '-b', 'master', 'origin.git', 'other');
+      git(dir, 'clone', '-q', '-b', 'master', 'origin.git', 'runner');
+      await writeFile(join(dir, 'other', file), 'other\n');
+      git(join(dir, 'other'), 'commit', '-qam', 'other');
+      git(join(dir, 'other'), 'push', '-q', 'origin', 'master');
+      await writeFile(join(dir, 'runner', 'site', 'ranking.json'), '{"new":true}\n');
+      const run = () => {
+        try {
+          execFileSync('bash', ['-eo', 'pipefail', '-c', commitScript], { cwd: join(dir, 'runner'), env, stdio: 'pipe' });
+          return 0;
+        } catch (e) {
+          return (e as { status: number }).status;
+        }
+      };
+      return { runner: join(dir, 'runner'), run, master: () => git(join(dir, 'origin.git'), 'log', '--format=%s', 'master') };
+    };
+
+    it('rebases on the new master and pushes the ranking on top of it', async () => {
+      const { run, master } = await setup('README.md');
+      expect(run()).toBe(0);
+      expect(master()).toBe('chore: update mint ranking\nother\nseed');
+    });
+
+    it('fails without pushing when master changed the same file', async () => {
+      const { runner, run, master } = await setup('site/ranking.json');
+      expect(run()).toBe(1);
+      expect(await readdir(join(runner, '.git'))).not.toContain('rebase-merge');
+      expect(master()).toBe('other\nseed');
+    });
   });
 });
 
