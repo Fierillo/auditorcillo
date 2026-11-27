@@ -38,6 +38,11 @@ describe('translate', () => {
     expect(translate(messages, 'es', 'onlyEn')).toBe('English only');
   });
 
+  it('drops a placeholder it has no value for instead of showing it', () => {
+    expect(translate(messages, 'en', 'hello', {})).toBe('Hello ');
+    expect(translate(messages, 'en', 'hello')).toBe('Hello ');
+  });
+
   it('returns the key itself when it is missing in every language', () => {
     expect(translate(messages, 'pt', 'missing')).toBe('missing');
   });
@@ -49,6 +54,21 @@ describe('MESSAGES', () => {
     for (const key of Object.keys(MESSAGES.en)) {
       expect(MESSAGES.en[key].length, key).toBeGreaterThan(0);
       expect(MESSAGES.es[key].length, key).toBeGreaterThan(0);
+    }
+  });
+
+  it('never renders a placeholder left unfilled, in any message or language', () => {
+    for (const lang of ['en', 'es'] as const) {
+      for (const key of Object.keys(MESSAGES.en)) expect(translate(MESSAGES, lang, key, {}), `${lang}.${key}`).not.toMatch(/\{\w+\}/);
+    }
+  });
+
+  it('fills the score FAQ from an older ranking.json that has no fees weight', () => {
+    const old = { availability: 40, nuts: 30, keysets: 20, info: 10 };
+    for (const lang of ['en', 'es'] as const) {
+      const text = translate(MESSAGES, lang, 'faqScoreA', old);
+      expect(text).not.toMatch(/[{}]/);
+      for (const n of Object.values(old)) expect(text).toContain(`${n} %`);
     }
   });
 

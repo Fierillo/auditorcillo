@@ -148,5 +148,5 @@ export function pickLanguage(stored, browserLanguage) {
 
 export function translate(messages, lang, key, vars) {
   const text = messages[lang]?.[key] ?? messages.en?.[key] ?? key;
-  return vars ? text.replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? `{${name}}`) : text;
+  return text.replace(/\{(\w+)\}/g, (_, name) => String(vars?.[name] ?? ''));
 }
