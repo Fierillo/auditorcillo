@@ -6,6 +6,9 @@ import { audit, concurrency, flaggedMintsJson, isPaidRun, MAX_PAYMENT_CONCURRENC
 import { NotPaid, type MintPort, type ProbeDeps } from '../src/probe.ts';
 import { SCORE } from '../src/score.ts';
 
+const rankingWorkflow = await readFile(new URL('../.github/workflows/ranking.yml', import.meta.url), 'utf8');
+const rankingSteps = rankingWorkflow.split('\n      - ');
+
 const reachable = (latency: number, now: { t: number }): MintPort =>
   ({
     info: async () => ((now.t += latency), { name: 'm', contact: [], nuts: [4, 5] }),
@@ -350,8 +353,7 @@ describe('run time budget', () => {
     expect(MINT_TIMEOUT_MS).toBe(60_000);
     expect(PAY_TIMEOUT_MS).toBeLessThan(MINT_TIMEOUT_MS);
     expect(MAX_PAYMENT_CONCURRENCY).toBe(2);
-    const workflow = await readFile(new URL('../.github/workflows/ranking.yml', import.meta.url), 'utf8');
-    const timeoutMinutes = Number(/timeout-minutes:\s*(\d+)/.exec(workflow)?.[1]);
+    const timeoutMinutes = Number(/timeout-minutes:\s*(\d+)/.exec(rankingWorkflow)?.[1]);
     const list = JSON.parse(await readFile(new URL('../mints.json', import.meta.url), 'utf8')) as unknown[];
     const needed = (n: number) => Math.ceil(n / concurrency(n, MINT_TIMEOUT_MS)) * MINT_TIMEOUT_MS;
     expect(RUN_BUDGET_MS + 5 * 60_000).toBeLessThanOrEqual(timeoutMinutes * 60_000);
@@ -370,16 +372,14 @@ describe('run time budget', () => {
     expect(concurrency(1000, MINT_TIMEOUT_MS)).toBe(MAX_PAYMENT_CONCURRENCY);
   });
 
-  it('stops starting payments early enough that install, the probe, and the commit fit in the job timeout', async () => {
-    const workflow = await readFile(new URL('../.github/workflows/ranking.yml', import.meta.url), 'utf8');
-    const jobMs = Number(/^ {4}timeout-minutes:\s*(\d+)/m.exec(workflow)?.[1]) * 60_000;
-    const chunks = workflow.split('\n      - ');
+  it('stops starting payments early enough that install, the probe, and the commit fit in the job timeout', () => {
+    const jobMs = Number(/^ {4}timeout-minutes:\s*(\d+)/m.exec(rankingWorkflow)?.[1]) * 60_000;
     const timeoutOf = (chunk: string) => {
       const m = /timeout-minutes:\s*(\d+)/.exec(chunk);
       return m ? Number(m[1]) * 60_000 : undefined;
     };
-    const probeAt = chunks.findIndex((s) => s.startsWith('name: Probe mints'));
-    const stepMs = timeoutOf(chunks[probeAt] ?? '');
+    const probeAt = rankingSteps.findIndex((s) => s.startsWith('name: Probe mints'));
+    const stepMs = timeoutOf(rankingSteps[probeAt] ?? '');
     const processSlackMs = 60_000; // starting the process and writing the files
     const installMs = 8 * 60_000; // generous budget for a slow or cache-miss install, spent before the probe
     const commitMs = 3 * 60_000;
@@ -389,11 +389,11 @@ describe('run time budget', () => {
     // The job clock starts at checkout, so a slow install is spent before the probe, not after it.
     expect(installMs + stepMs! + commitMs).toBeLessThanOrEqual(jobMs);
     // Setup and install have their own caps so a hang cannot eat the probe's time, and those caps fit the install budget.
-    const setup = chunks.slice(1, probeAt);
+    const setup = rankingSteps.slice(1, probeAt);
     expect(setup.length).toBeGreaterThan(0);
     expect(setup.every((s) => timeoutOf(s) !== undefined)).toBe(true);
     expect(setup.reduce((sum, s) => sum + timeoutOf(s)!, 0)).toBeLessThanOrEqual(installMs);
-    expect(timeoutOf(chunks.find((s) => s.startsWith('name: Commit ranking')) ?? '')).toBe(commitMs);
+    expect(timeoutOf(rankingSteps.find((s) => s.startsWith('name: Commit ranking')) ?? '')).toBe(commitMs);
   });
 
   it('probes as many mints at once as the budget needs, never more', async () => {
@@ -440,14 +440,12 @@ describe('flaggedMintsJson', () => {
     expect(flaggedMintsJson(JSON.parse(text), [])).toBe(text);
   });
 
-  it('commits mints.json even when the probe step crashes or times out, so a flag saved mid-run is not lost', async () => {
-    const workflow = await readFile(new URL('../.github/workflows/ranking.yml', import.meta.url), 'utf8');
-    expect(workflow).toMatch(/- name: Commit ranking\n\s+if: always\(\)/);
+  it('commits mints.json even when the probe step crashes or times out, so a flag saved mid-run is not lost', () => {
+    expect(rankingWorkflow).toMatch(/- name: Commit ranking\n\s+if: always\(\)/);
   });
 
-  it('is committed by the ranking workflow next to ranking.json', async () => {
-    const workflow = await readFile(new URL('../.github/workflows/ranking.yml', import.meta.url), 'utf8');
-    expect(workflow).toMatch(/git add site\/ranking\.json mints\.json/);
+  it('is committed by the ranking workflow next to ranking.json', () => {
+    expect(rankingWorkflow).toMatch(/git add site\/ranking\.json mints\.json/);
   });
 });
 
