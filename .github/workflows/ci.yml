@@ -1,11 +1,11 @@
-# Lint, typecheck and offline tests on every push and pull request to dev. No secrets and no network beyond the install:
+# Lint, typecheck and offline tests on every push and pull request to dev and master. No secrets and no network beyond the install:
 # the live tests (test/live) stay out, as in `pnpm test`.
 name: ci
 on:
   push:
-    branches: [dev]
+    branches: [dev, master]
   pull_request:
-    branches: [dev]
+    branches: [dev, master]
 permissions:
   contents: read
 concurrency:
