@@ -3,18 +3,18 @@ import {
   barPercent,
   checkSummary,
   checkTier,
+  feeView,
   formatBuenosAiresTime,
   formatScore,
   headerMorph,
   isHighlightedRank,
-  isScoredPart,
   isSafeIconUrl,
   matchesMint,
   mintInitials,
   normalizeQuery,
   openFaqTarget,
   parseLinkedText,
-  partPercent,
+  partCell,
   scoreTier,
   splitChecks,
   toTen,
@@ -31,6 +31,7 @@ const PARTS = [
 ];
 const FAQ_HREFS = {
   'faq-score': '#faq-score',
+  'faq-fees': '#faq-fees',
   'faq-cashu': '#faq-cashu',
   'faq-checks': '#faq-checks',
   'faq-update': '#faq-update',
@@ -91,6 +92,8 @@ function applyStatic() {
   for (const btn of document.querySelectorAll('[data-lang]')) btn.setAttribute('aria-pressed', String(btn.dataset.lang === lang));
   const intro = document.querySelector('.tagline');
   if (intro) appendLinked(intro, t('intro'), FAQ_HREFS);
+  const feesLegend = document.getElementById('fees-legend');
+  if (feesLegend) appendLinked(feesLegend, t('feesLegend'), FAQ_HREFS);
   const height = CREATION_BLOCK.height.toLocaleString(lang === 'es' ? 'es-AR' : 'en-US');
   const block = document.getElementById('footer-block');
   if (block) appendLinked(block, t('footerBlock', { height }), CREDIT_HREFS);
@@ -201,15 +204,13 @@ function renderMint(m, i, weights, maxScore) {
   card.append(meter(appendLinked(el('span'), t('uptimeLabel'), FAQ_HREFS), uptimeValue, barPercent(m.uptime), uptimeTier));
 
   const parts = el('div', '', 'parts');
+  const fee = feeView(m.fees, m.inputFeePpk, lang);
   for (const [part, labelKey] of PARTS) {
     const label = appendLinked(el('span'), t(labelKey), FAQ_HREFS);
-    if (!isScoredPart(weights[part])) {
-      parts.append(meter(label, t('partNotMeasured'), null));
-      continue;
-    }
     const value = m.score.parts[part];
-    const percent = partPercent(value, weights[part]);
-    parts.append(meter(label, displayTen(value, weights[part]), percent, scoreTier(percent)));
+    const { text, percent } = partCell(part, value, weights[part], fee);
+    const valueText = text ? t(text.key, text.vars) : displayTen(value, weights[part]);
+    parts.append(meter(label, valueText, percent, percent == null ? '' : scoreTier(percent)));
   }
   card.append(parts);
 

@@ -3,6 +3,8 @@ import {
   barPercent,
   checkSummary,
   checkTier,
+  feeView,
+  partCell,
   formatBuenosAiresTime,
   formatScore,
   headerMorph,
@@ -325,5 +327,43 @@ describe('splitChecks', () => {
     expect(publicChecks.map(([k]) => k)).toEqual(['mintQuote', 'minted']);
     expect(cycleChecks.map(([k]) => k)).toEqual(['keysetIds', 'doubleSpendRejected', 'melted']);
     expect(splitChecks(null)).toEqual({ publicChecks: [], cycleChecks: [] });
+  });
+});
+
+describe('feeView', () => {
+  it('shows the fee the mint declares, per token in sats', () => {
+    expect(feeView(undefined, 100, 'es')).toEqual({ key: 'feeDeclared', vars: { sats: '0,1' } });
+    expect(feeView(undefined, 100, 'en')).toEqual({ key: 'feeDeclared', vars: { sats: '0.1' } });
+    expect(feeView(undefined, 2500, 'en').vars).toEqual({ sats: '2.5' });
+    expect(feeView(undefined, 0, 'es')).toEqual({ key: 'feeDeclaredFree', vars: {} });
+  });
+
+  it('prefers a fee measured with real sats over the declared one', () => {
+    expect(feeView({ keptPct: 1.25 }, 100, 'es')).toEqual({ key: 'feeMeasured', vars: { pct: '1,25' } });
+    expect(feeView({ keptPct: 0 }, undefined, 'en')).toEqual({ key: 'feeMeasured', vars: { pct: '0' } });
+  });
+
+  it('says not measured when there is nothing valid, as in an older ranking.json', () => {
+    const none = { key: 'partNotMeasured', vars: {} };
+    expect(feeView(undefined, undefined, 'es')).toEqual(none);
+    expect(feeView(null, null, 'en')).toEqual(none);
+    for (const bad of [-1, Number.NaN, Number.POSITIVE_INFINITY, '100']) {
+      expect(feeView({ keptPct: bad }, bad, 'en'), String(bad)).toEqual(none);
+    }
+    expect(feeView(undefined, 1.5, 'en')).toEqual(none);
+  });
+});
+
+describe('partCell', () => {
+  const fee = { key: 'feeMeasured', vars: { pct: '1' } };
+
+  it('always shows the fee view for fees, and a bar only once fees weigh in the score', () => {
+    expect(partCell('fees', 0, 0, fee)).toEqual({ text: fee, percent: null });
+    expect(partCell('fees', 28, 35, fee)).toEqual({ text: fee, percent: 80 });
+  });
+
+  it('shows the score of a weighed part and says not measured for a part that weighs 0', () => {
+    expect(partCell('nuts', 15, 30, fee)).toEqual({ text: null, percent: 50 });
+    expect(partCell('info', 0, 0, fee)).toEqual({ text: { key: 'partNotMeasured', vars: {} }, percent: null });
   });
 });

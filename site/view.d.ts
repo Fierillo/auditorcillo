@@ -5,6 +5,17 @@ export function partPercent(
   part: number | null | undefined,
   weight: number | null | undefined,
 ): number;
+export function feeView(
+  fees: { keptPct?: unknown } | null | undefined,
+  inputFeePpk: unknown,
+  lang: string,
+): { key: 'feeMeasured' | 'feeDeclared' | 'feeDeclaredFree' | 'partNotMeasured'; vars: Record<string, string> };
+export function partCell<F>(
+  part: string,
+  value: number | null | undefined,
+  weight: number | null | undefined,
+  fee: F,
+): { text: F | { key: 'partNotMeasured'; vars: Record<string, string> } | null; percent: number | null };
 export function formatScore(value: number | null | undefined): string;
 export function checkSummary(
   checks: Record<string, { ok: boolean }> | null | undefined,

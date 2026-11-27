@@ -188,6 +188,11 @@ a.faq-link {
   text-decoration-thickness: from-font;
 }
 a.faq-link:hover { color: var(--accent); }
+.legend {
+  margin: -.35rem 0 .85rem;
+  color: var(--muted);
+  font-size: .8rem;
+}
 .toolbar .faq-link {
   color: var(--muted);
   font-size: .85rem;

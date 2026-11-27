@@ -10,8 +10,12 @@ export const MESSAGES = {
     colAvailability: '[faq-score]Availability[/faq-score]',
     colNuts: '[faq-checks]NUTs[/faq-checks]',
     colKeysets: '[faq-checks]Keysets[/faq-checks]',
-    colFees: '[faq-score]Fees[/faq-score]',
+    colFees: '[faq-fees]Fees[/faq-fees]',
     partNotMeasured: 'Not measured',
+    feeDeclared: '{sats} sat per token · declared',
+    feeDeclaredFree: 'No fee · declared',
+    feeMeasured: 'Keeps {pct} % · measured',
+    feesLegend: '“Declared” fees are what each mint says it charges; we have not measured them with real sats yet. [faq-fees]How are they measured?[/faq-fees]',
     colInfo: '[faq-score]Info[/faq-score]',
     loading: 'Loading…',
     updated: 'Updated: {time} (Buenos Aires time).',
@@ -20,6 +24,9 @@ export const MESSAGES = {
     faqScoreQ: 'How is the score calculated?',
     faqScoreA:
       'Scores are shown on a 1–10 scale. A mint that accepts spent tokens or publishes invalid keysets scores 0. The overall score combines availability {availability} %, announced NUT compliance {nuts} %, keyset consistency {keysets} %, and info and contact {info} %. Availability is the 7-day uptime times a latency factor (full credit when the mint is fast, half when it is slow). Fees: shown but not counted yet; they will be measured with a real withdrawal.',
+    faqFeesQ: 'How are fees shown and measured?',
+    faqFeesA:
+      'For now we show the fee each mint declares: how much it charges for every token you spend (for example, “0.1 sat per token”). When you pay, the mint adds up the fee of every token and rounds up to a whole sat. This is what the mint says, not something we checked, so it is marked “declared” and does not count toward the score yet. Next we will measure it for real: we load 100 sats into the mint, withdraw them and count how many it kept. That figure is marked “measured” and will count toward the score. If the mint leaves the fee blank, the protocol counts it as 0, so it shows “No fee · declared”. “Not measured” only appears when we could not read the mint yet.',
     faqCashuQ: 'What is Cashu, and what is a mint?',
     faqCashuA:
       'Cashu is an ecash protocol. A mint is a server that issues and redeems Cashu tokens. Auditorcillo ranks public mints by what it observes when it probes them, not by what they announce.',
@@ -82,8 +89,12 @@ export const MESSAGES = {
     colAvailability: '[faq-score]Disponibilidad[/faq-score]',
     colNuts: '[faq-checks]NUTs[/faq-checks]',
     colKeysets: '[faq-checks]Keysets[/faq-checks]',
-    colFees: '[faq-score]Comisiones[/faq-score]',
+    colFees: '[faq-fees]Comisiones[/faq-fees]',
     partNotMeasured: 'Sin medir',
+    feeDeclared: '{sats} sat por token · declarada',
+    feeDeclaredFree: 'Sin comisión · declarada',
+    feeMeasured: 'Se queda con {pct} % · medida',
+    feesLegend: 'Las comisiones «declaradas» son lo que cada mint dice que cobra; todavía no las medimos con sats reales. [faq-fees]¿Cómo se miden?[/faq-fees]',
     colInfo: '[faq-score]Info[/faq-score]',
     loading: 'Cargando…',
     updated: 'Actualizado: {time} (hora de Buenos Aires).',
@@ -92,6 +103,9 @@ export const MESSAGES = {
     faqScoreQ: '¿Cómo se calcula el puntaje?',
     faqScoreA:
       'Los puntajes se muestran en una escala de 1 a 10. Un mint que acepta tokens gastados o publica keysets inválidos queda en 0. El puntaje general combina disponibilidad {availability} %, cumplimiento de NUTs anunciados {nuts} %, consistencia de keysets {keysets} %, e info y contacto {info} %. La disponibilidad es el tiempo en línea de los últimos 7 días por un factor de latencia (crédito completo cuando el mint responde rápido, la mitad cuando es lento). Comisiones: se muestran pero todavía no suman; se van a medir con un retiro real.',
+    faqFeesQ: '¿Cómo se ven y cómo se miden las comisiones?',
+    faqFeesA:
+      'Por ahora mostramos la comisión que declara cada mint: cuánto cobra por cada token que gastás (por ejemplo, «0,1 sat por token»). Al pagar, el mint suma la comisión de todos los tokens y redondea hacia arriba al sat entero. Es lo que dice el mint, no algo que comprobamos, por eso aparece como «declarada» y todavía no suma al puntaje. Después la vamos a medir de verdad: cargamos 100 sats en el mint, los retiramos y contamos con cuántos se quedó. Ese dato aparece como «medida» y ahí sí va a sumar al puntaje. Si el mint deja la comisión en blanco, el protocolo la cuenta como 0, así que aparece «Sin comisión · declarada». «Sin medir» aparece solo cuando todavía no pudimos leer lo que declara el mint.',
     faqCashuQ: '¿Qué es Cashu y qué es un mint?',
     faqCashuA:
       'Cashu es un protocolo de ecash. Un mint es un servidor que emite y canjea tokens Cashu. Auditorcillo ordena mints públicos según lo que observa al probarlos, no según lo que anuncian.',

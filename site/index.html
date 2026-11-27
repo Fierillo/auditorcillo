@@ -69,6 +69,7 @@
     <p id="updated" class="updated"></p>
     <a class="faq-link" href="#faq-score" data-i18n="faqScoreLink">How is this calculated?</a>
   </div>
+  <p id="fees-legend" class="legend">“Declared” fees are what each mint says it charges; we have not measured them with real sats yet. <a class="faq-link" href="#faq-fees">How are they measured?</a></p>
   <div class="search">
     <div class="search-field">
       <label class="sr-only" for="search" data-i18n="searchLabel">Search mints</label>
@@ -92,6 +93,10 @@
     <details id="faq-score">
       <summary data-i18n="faqScoreQ">How is the score calculated?</summary>
       <p id="faq-score-a" class="faq-a"></p>
+    </details>
+    <details id="faq-fees">
+      <summary data-i18n="faqFeesQ">How are fees shown and measured?</summary>
+      <p class="faq-a" data-i18n="faqFeesA">For now we show the fee each mint declares: how much it charges for every token you spend (for example, “0.1 sat per token”). When you pay, the mint adds up the fee of every token and rounds up to a whole sat. This is what the mint says, not something we checked, so it is marked “declared” and does not count toward the score yet. Next we will measure it for real: we load 100 sats into the mint, withdraw them and count how many it kept. That figure is marked “measured” and will count toward the score. If the mint leaves the fee blank, the protocol counts it as 0, so it shows “No fee · declared”. “Not measured” only appears when we could not read the mint yet.</p>
     </details>
     <details id="faq-update">
       <summary data-i18n="faqUpdateQ">How often is the ranking updated?</summary>

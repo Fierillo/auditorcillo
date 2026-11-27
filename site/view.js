@@ -1,3 +1,5 @@
+import { isFeePpk, isKeptPct } from './fees.js';
+
 export function scoreTier(score) {
   if (score >= 80) return 'high';
   if (score >= 50) return 'mid';
@@ -17,6 +19,24 @@ export function isScoredPart(weight) {
 export function partPercent(part, weight) {
   if (typeof part !== 'number' || !Number.isFinite(part) || !isScoredPart(weight)) return 0;
   return barPercent((part / weight) * 100);
+}
+
+/** The fees cell: a fee measured with real sats wins; else the NUT-02 fee the mint declares (thousandths of a sat per token); else not measured. */
+export function feeView(fees, inputFeePpk, lang) {
+  const number = (value, digits) => value.toLocaleString(lang === 'es' ? 'es-AR' : 'en-US', { maximumFractionDigits: digits });
+  const kept = fees?.keptPct;
+  if (isKeptPct(kept)) return { key: 'feeMeasured', vars: { pct: number(kept, 2) } };
+  if (inputFeePpk === 0) return { key: 'feeDeclaredFree', vars: {} };
+  if (isFeePpk(inputFeePpk)) return { key: 'feeDeclared', vars: { sats: number(inputFeePpk / 1000, 3) } };
+  return { key: 'partNotMeasured', vars: {} };
+}
+
+/** A score part's cell: fees always show `fee` (a feeView); the bar shows only when the part weighs in the score.
+ * `text` null means show the part's own score. */
+export function partCell(part, value, weight, fee) {
+  const percent = isScoredPart(weight) ? partPercent(value, weight) : null;
+  if (part === 'fees') return { text: fee, percent };
+  return { text: percent == null ? { key: 'partNotMeasured', vars: {} } : null, percent };
 }
 
 export function formatScore(value) {

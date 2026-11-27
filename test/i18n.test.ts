@@ -105,3 +105,33 @@ describe('MESSAGES', () => {
     expect(html).toContain(MESSAGES.en.faqUpdateA);
   });
 });
+
+describe('fee texts', () => {
+  it('shows the declared and measured fee with their values and links the fees FAQ', () => {
+    for (const lang of ['en', 'es'] as const) {
+      expect(translate(MESSAGES, lang, 'feeDeclared', { sats: '0,1' })).toContain('0,1');
+      expect(translate(MESSAGES, lang, 'feeMeasured', { pct: '2' })).toContain('2 %');
+      expect(MESSAGES[lang].colFees).toMatch(/^\[faq-fees\].+\[\/faq-fees\]$/);
+      expect(MESSAGES[lang].feesLegend).toMatch(/\[faq-fees\].+\[\/faq-fees\]/);
+      expect(MESSAGES[lang]).not.toHaveProperty('feeDeclaredNote');
+    }
+    expect(MESSAGES.es.feeDeclared).toContain('declarada');
+    expect(MESSAGES.en.feeDeclared).toContain('declared');
+    expect(MESSAGES.es.feeMeasured).toContain('medida');
+    expect(MESSAGES.en.feeMeasured).toContain('measured');
+  });
+
+  it('has a fees FAQ in index.html that says how fees are measured with real sats', () => {
+    const html = readFileSync(new URL('../site/index.html', import.meta.url), 'utf8');
+    expect(html).toContain('<details id="faq-fees">');
+    expect(html).toContain(MESSAGES.en.faqFeesQ);
+    expect(html).toContain(MESSAGES.en.faqFeesA);
+    expect(MESSAGES.en.faqFeesA).toContain('100 sats');
+    expect(MESSAGES.es.faqFeesA).toContain('100 sats');
+    expect(MESSAGES.es.faqFeesA).toContain('contamos con cuántos se quedó');
+    expect(MESSAGES.en.faqFeesA).toContain('counts it as 0');
+    expect(MESSAGES.es.faqFeesA).toContain('la cuenta como 0');
+    expect(MESSAGES.en.faqFeesA).not.toContain('declares nothing');
+    expect(MESSAGES.es.faqFeesA).not.toContain('no declara nada');
+  });
+});
