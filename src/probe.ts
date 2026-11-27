@@ -1,8 +1,12 @@
 import { CHECK_NUTS, CYCLE_CHECKS, PUBLIC_CHECKS } from '../site/checks.js';
+import { isFeePpk } from '../site/fees.js';
 import { assertMintUrl } from './url.ts';
 import type { CheckResult, Observation } from './score.ts';
 
 export { CHECK_NUTS, CYCLE_CHECKS, PUBLIC_CHECKS };
+
+/** A GET /v1/keysets entry; `input_fee_ppk` (NUT-02) comes straight from the mint and is untrusted. */
+export type MintKeysetEntry = { id: string; active: boolean; input_fee_ppk?: unknown };
 
 /** The mint operations the auditor needs; src/cashu.ts implements them with cashu-ts. */
 export type MintPort = {
@@ -11,7 +15,7 @@ export type MintPort = {
   /** GET /v1/keys; `valid` = the id derives from the published keys (NUT-02). */
   keys(): Promise<Array<{ id: string; valid: boolean }>>;
   /** GET /v1/keysets */
-  keysets(): Promise<Array<{ id: string; active: boolean }>>;
+  keysets(): Promise<MintKeysetEntry[]>;
   createMintQuote(amount: number): Promise<{ quote: string; request: string }>;
   isMintQuotePaid(quote: string): Promise<boolean>;
   createMeltQuote(invoice: string): Promise<{ amount: number }>;
@@ -82,6 +86,8 @@ export type ProbeResult = Observation & {
   websiteUrl?: string;
   /** ISO timestamp of the last run that ran or attempted the real-wallet payment cycle on this mint. */
   paidCheckedAt?: string;
+  /** NUT-02 input fee the mint declares, in thousandths of a sat per token spent: read, not measured, and not scored. */
+  inputFeePpk?: number;
   /** Names of planned cycle checks this probe never ran, persisted so later unpaid runs can reuse them without guessing. */
   cycleUnrun?: string[];
   /** Set when the time limit or the mint cut the probe short. */
@@ -176,6 +182,13 @@ export function mintWebsiteUrl(info: { website?: unknown; urls?: unknown } | nul
   }
 }
 
+/** The highest NUT-02 `input_fee_ppk` among active keysets (what spending a fresh token costs at most); omitted or null is 0, as NUT-02 says.
+ * Undefined when there is no active keyset, or any active one declares an invalid fee: a bad value never reads as a lower fee. */
+export function declaredInputFeePpk(keysets: readonly MintKeysetEntry[]): number | undefined {
+  const fees = keysets.filter((k) => k.active).map((k) => k.input_fee_ppk ?? 0);
+  return fees.length && fees.every(isFeePpk) ? Math.max(...fees) : undefined;
+}
+
 const POLL_MS = 500;
 export const MANDATORY_NUTS = [1, 2, 3, 4, 5, 6];
 type Check = (name: keyof typeof CHECK_NUTS, run: () => Promise<boolean>) => Promise<boolean>;
@@ -247,6 +260,8 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
   r.nuts = info.nuts;
   const iconUrl = mintIconUrl(info.icon_url);
   if (iconUrl) r.iconUrl = iconUrl;
+  const inputFeePpk = declaredInputFeePpk(keysets);
+  if (inputFeePpk !== undefined) r.inputFeePpk = inputFeePpk;
   const fromInfo = mintWebsiteUrl(info, target.url);
   if (fromInfo) r.websiteUrl = fromInfo;
   r.info = {

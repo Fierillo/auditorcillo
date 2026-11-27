@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { assertMintAddresses, assertMintUrl, mintAgent, type CallbackLookup } from '../src/url.ts';
-import { announcedNuts, cappedFetch, NUTS_MAX } from '../src/cashu.ts';
+import { announcedNuts, cappedFetch, cashuPort, NUTS_MAX } from '../src/cashu.ts';
 
 describe('announcedNuts', () => {
   it('lists supported NUTs and the enabled mint/melt methods, ignoring disabled or unsupported ones', () => {
@@ -179,6 +179,31 @@ describe('mintAgent (connect-time DNS check)', () => {
       expect(await res.text()).toBe('ok');
     } finally {
       s.close();
+    }
+  });
+});
+
+describe('cashuPort keysets', () => {
+  it('passes the NUT-02 input fee through, keeps active and only lists sat keysets, without the network', async () => {
+    const keysets = [
+      { id: '00aa', unit: 'sat', active: true, input_fee_ppk: 100 },
+      { id: '00bb', unit: 'sat', active: false, input_fee_ppk: 0 },
+      { id: '00cc', unit: 'usd', active: true, input_fee_ppk: 50 },
+    ];
+    const fetch = vi.fn(async (input: RequestInfo | URL) => {
+      expect(String(input)).toBe('https://mint.example.com/v1/keysets');
+      return new Response(JSON.stringify({ keysets }), { headers: { 'content-type': 'application/json' } });
+    });
+    vi.stubGlobal('fetch', fetch);
+    try {
+      const got = await cashuPort('https://mint.example.com').keysets();
+      expect(got.map(({ id, active, input_fee_ppk }) => ({ id, active, input_fee_ppk }))).toEqual([
+        { id: '00aa', active: true, input_fee_ppk: 100 },
+        { id: '00bb', active: false, input_fee_ppk: 0 },
+      ]);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
     }
   });
 });

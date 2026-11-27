@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { score } from '../src/score.ts';
-import { invoiceSats, mintIconUrl, mintWebsiteUrl, MINT_ERROR_MAX, MINT_TEXT_MAX, probeMint, NotPaid, type LightningWallet, type MintPort, type ProbeDeps } from '../src/probe.ts';
+import { declaredInputFeePpk, invoiceSats, mintIconUrl, mintWebsiteUrl, MINT_ERROR_MAX, MINT_TEXT_MAX, probeMint, NotPaid, type LightningWallet, type MintPort, type ProbeDeps } from '../src/probe.ts';
 
 function fakeClock() {
   let t = 1_800_000_000_000;
@@ -772,5 +772,59 @@ describe('probeMint with malformed /v1/info', () => {
     const broken: ProbeDeps = { ...deps(clock, honestPort(clock)), port: () => { throw new Error('invalid mint URL: x'); } };
     const r = await probeMint({ url: 'x', cycle: false }, broken);
     expect(r).toMatchObject({ url: 'x', online: false, error: 'invalid mint URL: x' });
+  });
+});
+
+describe('declaredInputFeePpk', () => {
+  it('reads the highest NUT-02 input fee among active keysets, ignoring inactive ones', () => {
+    expect(declaredInputFeePpk([{ id: 'a', active: true, input_fee_ppk: 100 }, { id: 'b', active: true, input_fee_ppk: 0 }, { id: 'old', active: false, input_fee_ppk: 900 }])).toBe(100);
+    expect(declaredInputFeePpk([{ id: 'a', active: true, input_fee_ppk: 0 }])).toBe(0);
+  });
+
+  it('reads an active keyset that omits the fee, or sends null, as declaring 0, as NUT-02 does', () => {
+    expect(declaredInputFeePpk([{ id: 'a', active: true }])).toBe(0);
+    expect(declaredInputFeePpk([{ id: 'a', active: true, input_fee_ppk: null }])).toBe(0);
+    expect(declaredInputFeePpk([{ id: 'a', active: true }, { id: 'b', active: true, input_fee_ppk: 100 }])).toBe(100);
+  });
+
+  it('is undefined when there is no active keyset with a valid fee to read, so nothing is made up', () => {
+    expect(declaredInputFeePpk([])).toBeUndefined();
+    expect(declaredInputFeePpk([{ id: 'old', active: false, input_fee_ppk: 100 }])).toBeUndefined();
+    for (const input_fee_ppk of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, '100']) {
+      expect(declaredInputFeePpk([{ id: 'a', active: true, input_fee_ppk }]), String(input_fee_ppk)).toBeUndefined();
+    }
+  });
+
+  it('is undefined when any active keyset declares an invalid fee, even next to valid ones, so a bad value never reads as a lower fee', () => {
+    for (const input_fee_ppk of [-5, 1.5, '900']) {
+      expect(declaredInputFeePpk([{ id: 'a', active: true, input_fee_ppk: 0 }, { id: 'b', active: true, input_fee_ppk }]), String(input_fee_ppk)).toBeUndefined();
+    }
+    expect(declaredInputFeePpk([{ id: 'a', active: true, input_fee_ppk: 0 }, { id: 'old', active: false, input_fee_ppk: -5 }])).toBe(0);
+  });
+});
+
+describe('probeMint declared fees', () => {
+  it('stores the input fee the mint declares, without paying anything and without touching the score', async () => {
+    const clock = fakeClock();
+    const port = honestPort(clock, { keysets: async () => [{ id: 'k1', active: true, input_fee_ppk: 100 }] });
+    const r = await probeMint({ url: 'https://m', cycle: false }, deps(clock, port));
+    expect(r.inputFeePpk).toBe(100);
+    expect(r.fees).toBeUndefined();
+    const plain = await probeMint({ url: 'https://m', cycle: false }, deps(clock, honestPort(clock)));
+    expect(score(r)).toEqual(score(plain));
+  });
+
+  it('stores an explicit 0 when the active keysets omit the fee, so it is never confused with an older ranking.json', async () => {
+    const clock = fakeClock();
+    const r = await probeMint({ url: 'https://m', cycle: false }, deps(clock, honestPort(clock)));
+    expect(r).toHaveProperty('inputFeePpk', 0);
+    expect(JSON.parse(JSON.stringify(r)).inputFeePpk).toBe(0);
+  });
+
+  it('leaves it out when there is no active keyset to read or the mint does not answer', async () => {
+    const clock = fakeClock();
+    const inactive = honestPort(clock, { keysets: async () => [{ id: 'old', active: false, input_fee_ppk: 100 }] });
+    expect(await probeMint({ url: 'https://m', cycle: false }, deps(clock, inactive))).not.toHaveProperty('inputFeePpk');
+    expect(await probeMint({ url: 'https://down', cycle: false }, deps(clock, new Error('ECONNREFUSED')))).not.toHaveProperty('inputFeePpk');
   });
 });
