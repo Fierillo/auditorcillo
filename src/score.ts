@@ -1,4 +1,5 @@
 // The whole scoring policy lives here: change weights or thresholds only in SCORE.
+import { CYCLE_CHECKS } from '../site/checks.js';
 export const SCORE = {
   weights: { availability: 40, nuts: 30, keysets: 20, info: 10 },
   /** Uptime is the share of the last runs a mint answered in (the Action runs every 3 h: 56 runs = 7 days). */
@@ -12,7 +13,7 @@ export const SCORE = {
 } as const;
 
 export type Part = keyof typeof SCORE.weights;
-export type CheckResult = { nut: number; ok: boolean };
+export type CheckResult = { nut: number; ok: boolean; cycle?: true };
 export type Observation = {
   online: boolean;
   /** Whether the mint answered in each recent run, newest last; missing = this run only. */
@@ -25,8 +26,12 @@ export type Observation = {
   checks: Record<string, CheckResult>;
   /** The probe was cut short: a critical check it never reached counts as failed. */
   incomplete?: boolean;
+  /** NUTs of the checks a probe planned but never ran: they count as failed, but raise no alert. */
+  unrun?: number[];
   /** The mint kept sats we paid it: score 0 until the flag is removed by hand. */
   scam?: boolean;
+  /** A payment may exist and the cycle never ended in the melt: never scores above an honest mint. */
+  pending?: boolean;
 };
 export type Score = { total: number; parts: Record<Part, number>; alerts: string[] };
 
@@ -34,15 +39,30 @@ const share = (oks: boolean[]) => (oks.length ? oks.filter(Boolean).length / oks
 
 export function score(o: Observation): Score {
   const { weights, latencyMs, keysetNuts, critical } = SCORE;
-  const checks = Object.values(o.checks);
-  const isKeyset = (c: CheckResult) => (keysetNuts as readonly number[]).includes(c.nut);
+  const checks = { ...o.checks };
+  const unrun = [...(o.unrun ?? [])];
+  // A pending mint never finished the melt: melted counts as failed, even if a copied check says it passed.
+  if (o.pending) {
+    if (!Object.hasOwn(checks, 'melted')) {
+      const i = unrun.indexOf(CYCLE_CHECKS.melted);
+      if (i !== -1) unrun.splice(i, 1);
+    }
+    checks.melted = { nut: CYCLE_CHECKS.melted, ok: false, cycle: true };
+  }
+  const listed = Object.values(checks);
+  const isKeyset = (nut: number) => (keysetNuts as readonly number[]).includes(nut);
+  /** Pass/fail of every check in one part, the ones a probe never ran counting as failed. */
+  const oks = (keyset: boolean) => [
+    ...listed.filter((c) => isKeyset(c.nut) === keyset).map((c) => c.ok),
+    ...unrun.filter((nut) => isKeyset(nut) === keyset).map(() => false),
+  ];
   const slowness = Math.min(1, Math.max(0, ((o.latencyMs ?? Infinity) - latencyMs.full) / (latencyMs.slow - latencyMs.full)));
 
   const parts: Record<Part, number> = o.online
     ? {
         availability: weights.availability * (o.history?.length ? share(o.history) : 1) * (1 - slowness / 2),
-        nuts: weights.nuts * share(checks.filter((c) => !isKeyset(c)).map((c) => c.ok)),
-        keysets: weights.keysets * share(checks.filter(isKeyset).map((c) => c.ok)),
+        nuts: weights.nuts * share(oks(false)),
+        keysets: weights.keysets * share(oks(true)),
         info: weights.info * share(Object.values(o.info)),
       }
     : { availability: 0, nuts: 0, keysets: 0, info: 0 };

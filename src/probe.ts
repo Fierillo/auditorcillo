@@ -1,5 +1,8 @@
+import { CHECK_NUTS, CYCLE_CHECKS, PUBLIC_CHECKS } from '../site/checks.js';
 import { assertMintUrl } from './url.ts';
 import type { CheckResult, Observation } from './score.ts';
+
+export { CHECK_NUTS, CYCLE_CHECKS, PUBLIC_CHECKS };
 
 /** The mint operations the auditor needs; src/cashu.ts implements them with cashu-ts. */
 export type MintPort = {
@@ -24,10 +27,28 @@ export type MintPort = {
 
 /** A real Lightning wallet (NWC) to pay mint quotes and receive melts on mints without FakeWallet. */
 export type LightningWallet = {
-  /** Both stop waiting, and never send a request, once `signal` aborts. */
+  /** Both stop waiting, and never send a request, once `signal` aborts. payInvoice resolves once the wallet confirms the payment.
+   * It rejects with NotPaid only when that proves nothing was paid; any other rejection may hide a payment.
+   * Once `signal` aborts, payInvoice settles promptly: NotPaid if nothing was published, a plain error if it was. */
   payInvoice(invoice: string, signal?: AbortSignal): Promise<void>;
   makeInvoice(sats: number, signal?: AbortSignal): Promise<string>;
 };
+
+/** The wallet failed in a way that proves the invoice was not paid: the request never left, or the wallet refused it outright. */
+export class NotPaid extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'NotPaid';
+  }
+}
+
+/** Nothing was paid because the run has no time left to pay and still finish the cycle: no fault of the mint. */
+export class NoTime extends NotPaid {
+  constructor() {
+    super('not enough time left in this run to pay this mint, so nothing was paid');
+    this.name = 'NoTime';
+  }
+}
 
 export type ProbeDeps = {
   port(url: string): MintPort;
@@ -43,8 +64,9 @@ export type ProbeDeps = {
 };
 
 /** `cycle: true` = FakeWallet mint: the full cycle is free and never touches the real wallet.
- * `scam: true` = it kept sats we paid it: read-only checks only, until someone removes the flag by hand. */
-export type MintTarget = { url: string; cycle: boolean; scam?: boolean };
+ * `scam: true` = it kept sats we paid it; `pending: true` = we may have paid and the cycle never ended in the melt.
+ * Either flag is read-only checks only, until someone removes it by hand. */
+export type MintTarget = { url: string; cycle: boolean; scam?: boolean; pending?: boolean };
 
 export type ProbeResult = Observation & {
   url: string;
@@ -58,12 +80,22 @@ export type ProbeResult = Observation & {
   iconUrl?: string;
   /** Mint website: NUT-06 `website` or first safe `urls` entry, else the mint URL origin. */
   websiteUrl?: string;
+  /** ISO timestamp of the last run that ran or attempted the real-wallet payment cycle on this mint. */
+  paidCheckedAt?: string;
+  /** Names of planned cycle checks this probe never ran, persisted so later unpaid runs can reuse them without guessing. */
+  cycleUnrun?: string[];
   /** Set when the time limit or the mint cut the probe short. */
   incomplete?: true;
+  /** The mint did not answer within its time limit. */
+  timedOut?: true;
   /** The check our own wallet broke: left out, so it neither passes nor fails the mint. */
   notMeasured?: string;
+  /** The run had no time left to pay this mint: `notMeasured` for a reason that is nobody's fault. */
+  noTime?: true;
   /** The mint kept sats we paid it (now or in an earlier run). */
   scam?: true;
+  /** We may have paid and the cycle did not end in the melt: whatever the mint holds is unaccounted for, so do not pay it again. */
+  pending?: true;
 };
 
 /** Settles like `work`, or rejects with the abort reason as soon as `signal` aborts. */
@@ -145,8 +177,15 @@ export function mintWebsiteUrl(info: { website?: unknown; urls?: unknown } | nul
 }
 
 const POLL_MS = 500;
-const MANDATORY_NUTS = [1, 2, 3, 4, 5, 6];
+export const MANDATORY_NUTS = [1, 2, 3, 4, 5, 6];
+type Check = (name: keyof typeof CHECK_NUTS, run: () => Promise<boolean>) => Promise<boolean>;
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
+const recordedCheck = (name: keyof typeof CHECK_NUTS, ok: boolean, error?: string) => {
+  const nut = CHECK_NUTS[name];
+  const cycle = Object.hasOwn(CYCLE_CHECKS, name) ? true as const : undefined;
+  return { nut, ok, ...(cycle ? { cycle } : {}), ...(error ? { error } : {}) };
+};
+
 
 export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<ProbeResult> {
   const signal = AbortSignal.timeout(deps.mintTimeoutMs);
@@ -163,6 +202,8 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
     error: null,
   };
   if (target.scam) r.scam = true;
+  if (target.pending) r.pending = true;
+  const blocked = !!(target.scam || target.pending);
   const websiteUrl = mintWebsiteUrl(undefined, target.url);
   if (websiteUrl) r.websiteUrl = websiteUrl;
   const timed = async <T>(read: () => Promise<T>, ms: number[]) => {
@@ -172,10 +213,19 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
     return value;
   };
 
-  /** A probe cut off by the time limit is incomplete: score() counts its missing critical checks as failed.
-   * Never when our own wallet is what stopped it. */
+  /** The checks this probe means to run, known once /v1/info is read. */
+  let planned: Array<[string, number]> = [];
+  /** A time-limit abort is timedOut, never when our own wallet is what stopped it. The planned checks it never ran are
+   * listed as unrun, unless our wallet failed with nothing paid: that is not the mint's doing. */
   const done = () => {
-    if (signal.aborted && !r.notMeasured) r.incomplete = true;
+    if (signal.aborted && !r.notMeasured) r.timedOut = true;
+    const missed = planned.filter(([name]) => !r.checks[name]);
+    if (!r.notMeasured || r.pending) {
+      const unrun = missed.map(([, nut]) => nut);
+      if (unrun.length) r.unrun = unrun;
+      const cycleUnrun = missed.map(([name]) => name).filter((name) => Object.hasOwn(CYCLE_CHECKS, name));
+      if (cycleUnrun.length) r.cycleUnrun = cycleUnrun;
+    }
     return r;
   };
 
@@ -216,52 +266,70 @@ export async function probeMint(target: MintTarget, deps: ProbeDeps): Promise<Pr
     walletBusy = false;
     return value;
   };
+  /** payInvoice was called, and the wallet did not prove nothing was paid: from then on a payment may exist. */
+  let maybePaid = false;
+  let paying: Promise<void> | undefined;
   const wallet: LightningWallet | undefined = real && {
-    payInvoice: (invoice, s) => ours(() => real.payInvoice(invoice, s)),
+    payInvoice: (invoice, s) => {
+      maybePaid = true;
+      paying = ours(() => real.payInvoice(invoice, s)).catch((e) => {
+        if (e instanceof NotPaid) maybePaid = false;
+        throw e;
+      });
+      return paying;
+    },
     makeInvoice: (sats, s) => ours(() => real.makeInvoice(sats, s)),
   };
 
   const announced = (nut: number) => MANDATORY_NUTS.includes(nut) || info.nuts.includes(nut);
+  const cycleRuns = !blocked && (target.cycle || !!wallet);
+  planned = Object.entries(CHECK_NUTS).filter(([name, nut]) => announced(nut) && (cycleRuns || Object.hasOwn(PUBLIC_CHECKS, name)));
   /** Runs a check only if its NUT is announced; a throw fails it. Returns whether it passed. */
-  const check = async (name: string, nut: number, run: () => Promise<boolean>) => {
+  const check: Check = async (name, run) => {
+    const nut = CHECK_NUTS[name];
     if (!announced(nut)) return true;
     if (signal.aborted) return false;
     try {
-      r.checks[name] = { nut, ok: await abortable(run(), signal) };
+      r.checks[name] = recordedCheck(name, await abortable(run(), signal));
     } catch (e) {
       if (walletBusy) {
+        // payInvoice must settle once the signal aborts; awaiting it is how maybePaid becomes final, with no timer.
+        if (paying) await paying.catch(() => {});
         walletBusy = false;
         r.notMeasured = name;
+        if (e instanceof NoTime) r.noTime = true;
         r.error ??= clip(`${name}: our wallet: ${message(e)}`, MINT_ERROR_MAX);
         return false;
       }
-      r.checks[name] = { nut, ok: false, error: clip(message(e), MINT_ERROR_MAX) };
+      r.checks[name] = recordedCheck(name, false, clip(message(e), MINT_ERROR_MAX));
       r.error ??= clip(`${name}: ${message(e)}`, MINT_ERROR_MAX);
     }
     return r.checks[name].ok;
   };
 
   const keyIds = new Set(keys.map((k) => k.id));
-  await check('keysetIds', 2, async () => keys.length > 0 && keys.every((k) => k.valid));
-  await check('keysetsListed', 2, async () => {
+  await check('keysetIds', async () => keys.length > 0 && keys.every((k) => k.valid));
+  await check('keysetsListed', async () => {
     const active = keysets.filter((k) => k.active);
     return active.length > 0 && active.every((k) => keyIds.has(k.id));
   });
   let invoice = '';
-  await check('mintQuote', 4, async () => {
+  await check('mintQuote', async () => {
     const { quote, request } = await port.createMintQuote(deps.amount);
     invoice = request;
     return !!quote && request.toLowerCase().startsWith('ln');
   });
-  await check('meltQuote', 5, async () => (await port.createMeltQuote(invoice)).amount >= deps.amount);
-  await check('checkState', 7, port.unknownProofIsUnspent);
+  await check('meltQuote', async () => (await port.createMeltQuote(invoice)).amount >= deps.amount);
+  await check('checkState', port.unknownProofIsUnspent);
 
-  if (!target.scam && (target.cycle || wallet)) {
-    const paid = await cycle(port, deps, signal, wallet, check);
-    // We paid and the mint confirmed it, yet it neither issued the ecash nor let us melt it back.
-    if (paid && !signal.aborted && !r.notMeasured && !r.checks.melted?.ok) r.scam = true;
-    // A cycle the mint broke before the double-spend check leaves it unproven, so it counts as failed.
-    if (!r.checks.doubleSpendRejected && !r.notMeasured) r.incomplete = true;
+  if (cycleRuns && !signal.aborted) {
+    const { started, paid, kept } = await cycle(port, deps, signal, wallet, check);
+    // A payment may exist and the cycle did not end in the melt: whatever the mint holds is unaccounted for, so do not pay it again.
+    if (maybePaid && !r.checks.melted?.ok) r.pending = true;
+    // Scam only with proof the mint kept our sats: it charged us and issued nothing, or it spent our ecash without paying us.
+    if (paid && !r.notMeasured && ((!signal.aborted && !r.checks.minted?.ok) || kept)) r.scam = true;
+    // A cycle past the payment that stopped before the double-spend check leaves it unproven, so it counts as failed.
+    if (started && !r.checks.doubleSpendRejected && !r.notMeasured) r.incomplete = true;
   }
   return done();
 }
@@ -271,39 +339,56 @@ async function cycle(
   deps: ProbeDeps,
   signal: AbortSignal,
   wallet: LightningWallet | undefined,
-  check: (name: string, nut: number, run: () => Promise<boolean>) => Promise<boolean>,
-): Promise<boolean> {
+  check: Check,
+): Promise<{ started: boolean; paid: boolean; kept: boolean }> {
+  /** The mint invoice is paid by our wallet, or settles itself on a FakeWallet mint: from here a failure is the mint's to answer for. */
+  let started = false;
   /** Our wallet paid the mint invoice and the mint reported the quote paid. */
   let paid = false;
   let minted: { proofs: unknown[]; dleqValid: boolean } | undefined;
   let fresh: unknown[] = [];
   let meltInputs: unknown[] = [];
-  const ok = await check('minted', 4, async () => {
+  const ok = await check('minted', async () => {
     const { quote, request } = await port.createMintQuote(deps.amount);
     if (wallet) {
       const sats = invoiceSats(request);
       if (sats !== deps.amount) throw new Error(`mint invoice is ${sats ?? 'unspecified'} sats, expected ${deps.amount}`);
       await wallet.payInvoice(request, signal);
     }
+    started = true;
     await waitUntilPaid(port, quote, deps, signal);
     paid = !!wallet;
     minted = await port.mint(deps.amount, quote);
     return minted.proofs.length > 0;
   });
-  if (!ok || !minted) return paid;
+  if (!ok || !minted) return { started, paid, kept: false };
   const { proofs, dleqValid } = minted;
-  await check('dleq', 12, async () => dleqValid);
-  if (!(await check('swap', 3, async () => (fresh = await port.swap(proofs)).length > 0))) return paid;
-  await check('doubleSpendRejected', 3, () => port.swap(proofs).then(() => false, () => true));
-  const half = Math.floor(deps.amount / 2);
-  await check('melted', 5, async () => {
-    const invoice = wallet ? await wallet.makeInvoice(half, signal) : (await port.createMintQuote(half)).request;
-    const { paid, inputs } = await port.melt(invoice, fresh);
-    meltInputs = inputs;
-    return paid;
-  });
-  await check('spentState', 7, () => port.allSpent([...proofs, ...meltInputs]));
-  return paid;
+  await check('dleq', async () => dleqValid);
+  /** What we still hold if the cycle stops here. */
+  let held = proofs;
+  if (await check('swap', async () => (fresh = await port.swap(proofs)).length > 0)) {
+    await check('doubleSpendRejected', () => port.swap(proofs).then(() => false, () => true));
+    const half = Math.floor(deps.amount / 2);
+    const meltedOk = await check('melted', async () => {
+      const invoice = wallet ? await wallet.makeInvoice(half, signal) : (await port.createMintQuote(half)).request;
+      const { paid, inputs } = await port.melt(invoice, fresh);
+      meltInputs = inputs;
+      return paid;
+    });
+    await check('spentState', () => port.allSpent([...proofs, ...meltInputs]));
+    if (meltedOk) return { started, paid, kept: false };
+    held = meltInputs.length ? meltInputs : fresh;
+  }
+  // The cycle stopped before the melt paid us: did the mint spend what we hold without paying for it?
+  let kept = false;
+  if (paid) {
+    try {
+      kept = await abortable(port.allSpent(held), signal);
+    } catch {
+      // A check-state failure is not proof the mint kept the tokens.
+    }
+  }
+  return { started, paid, kept };
 }
 
 async function waitUntilPaid(port: MintPort, quote: string, deps: ProbeDeps, signal: AbortSignal): Promise<void> {

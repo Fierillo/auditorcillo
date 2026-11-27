@@ -1,5 +1,5 @@
 # Probes the mints in mints.json every 3 hours and commits site/ranking.json, plus mints.json when a mint is newly
-# flagged as scam; Vercel redeploys the static page.
+# flagged as scam or pending; Vercel redeploys the static page.
 name: ranking
 on:
   schedule:
@@ -12,24 +12,37 @@ concurrency:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The job clock starts at checkout, so this has to cover a slow install, the whole probe, and the commit.
+    # 8 min install + 17 min probe + 3 min commit, with a little slack for step transitions.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        timeout-minutes: 2
         with:
           # The write token stays out of .git/config, so the steps that handle mint data never see it.
           persist-credentials: false
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        timeout-minutes: 1
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        timeout-minutes: 2
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+        timeout-minutes: 3
+      # No payment starts unless its whole mint limit fits in the 15 min run budget, so at most 16 min after
+      # this step starts no payment can be in flight. This cap only catches a hang. Setup and install have
+      # their own caps (8 min together) so a slow or stuck install cannot eat this step's time.
       - name: Probe mints
+        timeout-minutes: 17
         run: pnpm rank
         env:
-          # Optional: with a Nostr Wallet Connect secret the paid cycle also runs on real mints (spends a few sats).
+          # Optional: with a Nostr Wallet Connect secret the paid cycle runs on real mints once a day in 12:00-15:00 UTC (09:17 ART slot).
           NWC_URL: ${{ secrets.NWC_URL }}
+      # Also after a crashed or timed-out probe: flags saved to mints.json mid-run must not die with the runner.
       - name: Commit ranking
+        if: always()
+        timeout-minutes: 3
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |

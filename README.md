@@ -2,7 +2,7 @@
 
 Audits public [Cashu](https://cashu.space) mints and ranks them by **observed behaviour**: a NUT a mint announces in `/v1/info` only counts once the auditor has seen it work. Includes local cheating mints that the auditor catches.
 
-- A GitHub Action (`.github/workflows/ranking.yml`) probes the mints in `mints.json` every 3 hours and commits `site/ranking.json`.
+- A GitHub Action (`.github/workflows/ranking.yml`) runs public checks and updates uptime every 3 hours, runs the paid cycle on real mints once a day (`12:17` UTC / `09:17` ART, reusing the last paid result in between), and commits `site/ranking.json`.
 - `site/` is a static page (plain HTML/JS) deployed on Vercel (`vercel.json`) that reads that JSON. No server. English and Spanish: it follows the browser language and keeps an EN/ES toggle in `localStorage`.
 
 ## Run locally
@@ -32,7 +32,7 @@ Serve the page with any static server, e.g. `npx serve site`.
 | `checkState`: a proof it never signed reads `UNSPENT` | 07 | if announced |
 | `minted`, `dleq`, `swap`, `doubleSpendRejected`, `melted`, `spentState` | 03/04/05/07/12 | full cycle |
 
-The full cycle runs for free on FakeWallet mints (`"cycle": true` in `mints.json`). On real mints it runs only if `NWC_URL` (a Nostr Wallet Connect URI, GitHub secret `NWC_URL`) is set: the wallet pays an 8-sat mint quote and receives the melt of 4 sats, so each mint costs the fees (a few sats) per run.
+The full cycle runs on every probe for free on FakeWallet mints (`"cycle": true` in `mints.json`). On real mints it runs only if `NWC_URL` (a Nostr Wallet Connect URI, GitHub secret `NWC_URL`) is set and the clock is inside the daily `[12:00, 15:00)` UTC window (catching the `12:17` UTC / `09:17` ART cron slot even with delay; manual runs follow the same window): the wallet pays an 8-sat mint quote and receives the melt of 4 sats, so each mint costs a few sats once per day, and the other 7 runs reuse the previous paid results (`paidCheckedAt`).
 
 ## Score (0–100)
 

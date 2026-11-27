@@ -86,12 +86,46 @@ describe('score', () => {
     expect(score(both).alerts).toEqual(['scam', 'keysetIds']);
   });
 
+
+  it('never scores a pending mint above an honest mint, even with a copied passing melted check', () => {
+    const honest = score(perfect());
+    expect(score(perfect({ pending: true })).total).toBeLessThan(honest.total);
+    const copied = perfect({
+      pending: true,
+      checks: {
+        ...perfect().checks,
+        minted: { nut: 4, ok: true, cycle: true },
+        melted: { nut: 5, ok: true, cycle: true },
+      },
+    });
+    expect(score(copied).total).toBeLessThan(honest.total);
+    expect(score(copied).alerts).toEqual([]);
+  });
+
+  it('counts melted as failed when the mint is pending, even if unrun is already non-empty', () => {
+    const withUnrun = perfect({ unrun: [12] });
+    const pending = score({ ...withUnrun, pending: true });
+    expect(pending.total).toBeLessThan(score(withUnrun).total);
+    expect(pending.total).toBeLessThan(score(perfect()).total);
+    expect(pending.parts.nuts).toBeLessThan(score(withUnrun).parts.nuts);
+  });
+
   it('counts a critical check an incomplete probe never reached as failed', () => {
     expect(score(perfect({ incomplete: true }))).toMatchObject({ total: 0, alerts: ['doubleSpendRejected'] });
     const reached = perfect({ incomplete: true });
     reached.checks.doubleSpendRejected = { nut: 3, ok: true };
     expect(score(reached)).toMatchObject({ total: 100, alerts: [] });
     expect(score(perfect()).alerts).toEqual([]);
+  });
+});
+
+describe('score of a timed-out probe', () => {
+  it('counts the checks it never ran as failed in their own part, with no fraud alert', () => {
+    expect(score(perfect({ unrun: [4, 12, 3, 3, 5, 7] }))).toMatchObject({ alerts: [], parts: { nuts: (SCORE.weights.nuts * 2) / 8, keysets: SCORE.weights.keysets } });
+    const keyset = score(perfect({ unrun: [2] })).parts;
+    expect(keyset.keysets).toBeCloseTo((SCORE.weights.keysets * 2) / 3);
+    expect(keyset.nuts).toBe(SCORE.weights.nuts);
+    expect(score(perfect({ unrun: [] })).total).toBe(100);
   });
 });
 
