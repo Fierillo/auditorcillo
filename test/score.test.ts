@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { SCORE, rank, score, type Observation } from '../src/score.ts';
+import { readFileSync } from 'node:fs';
+import { SCORE, feeShare, rank, score, type Observation } from '../src/score.ts';
 
 const fullInfo = { name: true, pubkey: true, version: true, description: true, contact: true };
 
@@ -14,13 +15,24 @@ function perfect(over: Partial<Observation> = {}): Observation {
       mintQuote: { nut: 4, ok: true },
       meltQuote: { nut: 5, ok: true },
     },
+    fees: { keptPct: 0 },
     ...over,
   };
 }
 
 describe('score', () => {
-  it('weights add up to 100 so the score reads as a percentage', () => {
-    expect(Object.values(SCORE.weights).reduce((a, b) => a + b, 0)).toBe(100);
+  it('weighs availability 40, NUTs 30, keysets 20 and info 10, with fees shown at 0 until they are measured', () => {
+    expect(SCORE.weights).toEqual({ availability: 40, nuts: 30, keysets: 20, fees: 0, info: 10 });
+  });
+
+  it('reproduces every score stored in site/ranking.json', () => {
+    const { mints } = JSON.parse(readFileSync(new URL('../site/ranking.json', import.meta.url), 'utf8'));
+    for (const m of mints) expect(score(m).total, m.url).toBe(m.score.total);
+  });
+
+  it('neither adds nor subtracts for fees while their weight is 0', () => {
+    expect(score(perfect({ fees: undefined })).total).toBe(100);
+    expect(score(perfect({ fees: { keptPct: 12 } })).total).toBe(100);
   });
 
   it('pins the availability latency thresholds at 300 ms full and 3000 ms slow', () => {
@@ -116,6 +128,28 @@ describe('score', () => {
     reached.checks.doubleSpendRejected = { nut: 3, ok: true };
     expect(score(reached)).toMatchObject({ total: 100, alerts: [] });
     expect(score(perfect()).alerts).toEqual([]);
+  });
+});
+
+describe('feeShare', () => {
+  it('is 1 at 0 % kept, 0 from 5 % up, and linear in between', () => {
+    expect(feeShare({ keptPct: 0 })).toBe(1);
+    expect(feeShare({ keptPct: 2.5 })).toBeCloseTo(0.5);
+    expect(feeShare({ keptPct: 5 })).toBe(0);
+    expect(feeShare({ keptPct: 12 })).toBe(0);
+  });
+
+  it('is 0 without fee data, so hiding fees never beats showing them', () => {
+    expect(feeShare(undefined)).toBe(0);
+    expect(feeShare(undefined)).toBeLessThanOrEqual(feeShare({ keptPct: 4.9 }));
+  });
+
+  it('counts garbage fee data as not measured', () => {
+    for (const keptPct of [-1, Number.NaN, Number.POSITIVE_INFINITY, '1' as unknown as number]) expect(feeShare({ keptPct })).toBe(0);
+  });
+
+  it('reads only what the mint kept on a real withdrawal', () => {
+    expect(feeShare({ keptPct: 1, inputPct: 4, reservePct: 0 } as { keptPct: number })).toBeCloseTo(0.8);
   });
 });
 

@@ -41,6 +41,7 @@ All weights and thresholds live in `SCORE` in `src/score.ts`.
 - **Availability 40**: uptime over the last 56 runs (7 days), times a latency factor: full up to 300 ms, falling to half at 3 s.
 - **NUT compliance 30**: share of the NUT checks above that passed (NUT-02 checks excluded).
 - **Keyset consistency 20**: share of the NUT-02 checks that passed.
+- **Fees 0**: shown but not counted yet; they will be measured with a real withdrawal: load 100 sats into the mint, withdraw them and count what it kept (input fees included). Once measured, the weights become 35/25/15/15/10 (only `SCORE.weights` changes): full points at 0 % kept, none at 5 % or more, linear in between, and no fee data earns nothing.
 - **Info 10**: share of `name`, `pubkey`, `version`, `description`, `contact` filled in.
 
 An offline mint gets 0. A mint that accepts an already spent token or whose keyset ids don't match its keys gets 0 and an alert.

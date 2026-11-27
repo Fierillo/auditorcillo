@@ -1,13 +1,16 @@
 // The whole scoring policy lives here: change weights or thresholds only in SCORE.
 import { CYCLE_CHECKS } from '../site/checks.js';
 export const SCORE = {
-  weights: { availability: 40, nuts: 30, keysets: 20, info: 10 },
+  /** Fees are shown but weigh 0 until a real withdrawal measures them; then this becomes 35/25/15/15/10. */
+  weights: { availability: 40, nuts: 30, keysets: 20, fees: 0, info: 10 },
   /** Uptime is the share of the last runs a mint answered in (the Action runs every 3 h: 56 runs = 7 days). */
   historyRuns: 56,
   /** Full availability up to `full` ms; it falls linearly to half at `slow` ms and stays there. */
   latencyMs: { full: 300, slow: 3000 },
   /** NUTs whose checks count as keyset consistency; every other check counts as NUT compliance. */
   keysetNuts: [1, 2],
+  /** Full fee points when the mint keeps 0 % of a withdrawal, none from `zeroPct` up, linear in between. */
+  fees: { zeroPct: 5 },
   /** Failing any of these, or never reaching one in an incomplete probe, means the mint cheats or can't be trusted: score 0 and an alert. */
   critical: ['keysetIds', 'doubleSpendRejected'],
 } as const;
@@ -32,10 +35,19 @@ export type Observation = {
   scam?: boolean;
   /** A payment may exist and the cycle never ended in the melt: never scores above an honest mint. */
   pending?: boolean;
+  /** What the mint kept, in % of a real withdrawal (load 100 sats, withdraw them, count what is missing); input fees included. */
+  fees?: { keptPct: number };
 };
 export type Score = { total: number; parts: Record<Part, number>; alerts: string[] };
 
 const share = (oks: boolean[]) => (oks.length ? oks.filter(Boolean).length / oks.length : 0);
+
+/** Share of the fee points: 1 at 0 % kept, 0 from SCORE.fees.zeroPct up. Missing or invalid fee data is not measured and earns nothing, so hiding fees never pays. */
+export function feeShare(fees: Observation['fees']): number {
+  const kept = fees?.keptPct;
+  if (typeof kept !== 'number' || !Number.isFinite(kept) || kept < 0) return 0;
+  return Math.max(0, 1 - kept / SCORE.fees.zeroPct);
+}
 
 export function score(o: Observation): Score {
   const { weights, latencyMs, keysetNuts, critical } = SCORE;
@@ -63,9 +75,10 @@ export function score(o: Observation): Score {
         availability: weights.availability * (o.history?.length ? share(o.history) : 1) * (1 - slowness / 2),
         nuts: weights.nuts * share(oks(false)),
         keysets: weights.keysets * share(oks(true)),
+        fees: weights.fees * feeShare(o.fees),
         info: weights.info * share(Object.values(o.info)),
       }
-    : { availability: 0, nuts: 0, keysets: 0, info: 0 };
+    : { availability: 0, nuts: 0, keysets: 0, fees: 0, info: 0 };
   const alerts = [
     ...(o.scam ? ['scam'] : []),
     ...critical.filter((name) => o.checks[name]?.ok === false || (o.incomplete && !o.checks[name])),
