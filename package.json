@@ -13,6 +13,7 @@
     "test": "vitest run --exclude 'test/live/**'",
     "test:live": "vitest run test/live",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "rank": "node src/cli.ts mints.json site/ranking.json",
     "demo": "node src/demo.ts"
   },
@@ -22,8 +23,12 @@
     "undici": "7.30.2"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@types/node": "^26.6.6",
-    "typescript": "7.0.2",
+    "eslint": "10.15.0",
+    "globals": "17.14.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.74.0",
     "vitest": "5.1.0"
   }
 }

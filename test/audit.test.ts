@@ -535,7 +535,7 @@ describe('daily paid cycle reuse', () => {
   const laterTime = Date.UTC(2026, 10, 24, 15, 17, 0);
   const thirdTime = Date.UTC(2026, 10, 24, 18, 17, 0);
   const fullInfo = { name: 'Honest', pubkey: '02' + 'a'.repeat(64), version: '1', description: 'd', contact: [{ method: 'nostr', info: 'npub1' }], nuts: [4, 5, 7, 12] };
-  const honestPort = (over: Partial<MintPort> = {}, latency = 10): MintPort => {
+  const honestPort = (over: Partial<MintPort> = {}): MintPort => {
     let swapped = false;
     return {
       info: async () => fullInfo,
@@ -646,7 +646,7 @@ describe('daily paid cycle reuse', () => {
 
     const run2 = await audit(
       [...paidOnlyTargets, { url: 'https://never-paid', cycle: false }],
-      { port: (u) => honestPort(), now: () => laterTime, sleep: async () => {}, amount: 8, payTimeoutMs: 1, mintTimeoutMs: MINT_TIMEOUT_MS },
+      { port: () => honestPort(), now: () => laterTime, sleep: async () => {}, amount: 8, payTimeoutMs: 1, mintTimeoutMs: MINT_TIMEOUT_MS },
       prev,
     );
     const byUrl = Object.fromEntries(run2.mints.map((m) => [m.url, m]));
@@ -724,7 +724,7 @@ describe('daily paid cycle reuse', () => {
     const spyMint = async () => { throw new Error('must not run cycle on real mint without wallet'); };
     const back = await audit(
       targets,
-      { port: (u) => honestPort({ mint: spyMint }), now: () => thirdTime, sleep: async () => {}, amount: 8, payTimeoutMs: 1, mintTimeoutMs: 60_000 },
+      { port: () => honestPort({ mint: spyMint }), now: () => thirdTime, sleep: async () => {}, amount: 8, payTimeoutMs: 1, mintTimeoutMs: 60_000 },
       parsePrevious(rankingJson(offline)),
     );
     const on = Object.fromEntries(back.mints.map((m) => [m.url, m]));
