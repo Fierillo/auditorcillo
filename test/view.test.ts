@@ -3,6 +3,7 @@ import {
   barPercent,
   checkSummary,
   checkTier,
+  formatBuenosAiresTime,
   formatScore,
   headerMorph,
   isHighlightedRank,
@@ -14,6 +15,7 @@ import {
   parseLinkedText,
   partPercent,
   scoreTier,
+  splitChecks,
   toTen,
 } from '../site/view.js';
 
@@ -89,6 +91,15 @@ describe('checkSummary', () => {
   it('treats a missing or empty checks object as zero of zero', () => {
     expect(checkSummary({})).toEqual({ passed: 0, total: 0 });
     expect(checkSummary(undefined)).toEqual({ passed: 0, total: 0 });
+  });
+
+  it('counts checks a timed-out probe never ran as not passed', () => {
+    expect(checkSummary({ mintQuote: { ok: true }, meltQuote: { ok: true }, checkState: { ok: true } }, [4, 12, 3, 3, 5, 7])).toEqual({
+      passed: 3,
+      total: 9,
+    });
+    expect(checkSummary({ mintQuote: { ok: true } }, [])).toEqual({ passed: 1, total: 1 });
+    expect(checkSummary({ mintQuote: { ok: true } }, undefined)).toEqual({ passed: 1, total: 1 });
   });
 });
 
@@ -274,5 +285,33 @@ describe('headerMorph', () => {
 
   it('treats negative scroll (overscroll bounce) as the top', () => {
     expect(headerMorph(-30, big, small)).toEqual({ x: 0, scale: 1, docked: false });
+  });
+});
+
+describe('formatBuenosAiresTime', () => {
+  it('formats a valid ISO timestamp in Buenos Aires time and returns null on missing or invalid input', () => {
+    const iso = '2026-11-24T12:17:00.000Z';
+    const en = formatBuenosAiresTime(iso, 'en');
+    const es = formatBuenosAiresTime(iso, 'es');
+    expect(en).toContain('09:17');
+    expect(es).toContain('9:17');
+    expect(formatBuenosAiresTime(null, 'en')).toBeNull();
+    expect(formatBuenosAiresTime('', 'es')).toBeNull();
+    expect(formatBuenosAiresTime('not-a-date', 'en')).toBeNull();
+  });
+});
+
+describe('splitChecks', () => {
+  it('separates checks by the cycle flag written in ranking.json, not by a hard-coded name list', () => {
+    const { publicChecks, cycleChecks } = splitChecks({
+      keysetIds: { ok: true, cycle: true },
+      mintQuote: { ok: true },
+      minted: { ok: true },
+      doubleSpendRejected: { ok: true, cycle: true },
+      melted: { ok: false, cycle: true },
+    });
+    expect(publicChecks.map(([k]) => k)).toEqual(['mintQuote', 'minted']);
+    expect(cycleChecks.map(([k]) => k)).toEqual(['keysetIds', 'doubleSpendRejected', 'melted']);
+    expect(splitChecks(null)).toEqual({ publicChecks: [], cycleChecks: [] });
   });
 });

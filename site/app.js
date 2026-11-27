@@ -3,6 +3,7 @@ import {
   barPercent,
   checkSummary,
   checkTier,
+  formatBuenosAiresTime,
   formatScore,
   headerMorph,
   isHighlightedRank,
@@ -14,6 +15,7 @@ import {
   parseLinkedText,
   partPercent,
   scoreTier,
+  splitChecks,
   toTen,
 } from './view.js';
 
@@ -203,9 +205,12 @@ function renderMint(m, i, weights, maxScore) {
 
   const chips = el('div', '', 'chips');
   if (m.scam) chips.append(el('span', t('scam'), 'chip fail'));
-  if (!m.online) chips.append(el('span', t('offline'), 'chip fail'));
-  if (m.notMeasured) chips.append(el('span', t('notMeasured', { check: checkLabel(m.notMeasured) }), 'chip mid'));
-  const summary = checkSummary(m.checks);
+  else if (m.pending) chips.append(el('span', t('pending'), 'chip mid'));
+  if (m.timedOut) chips.append(el('span', t('timedOut'), 'chip mid'));
+  else if (!m.online) chips.append(el('span', t('offline'), 'chip fail'));
+  if (m.noTime) chips.append(el('span', t('noTime'), 'chip mid'));
+  else if (m.notMeasured) chips.append(el('span', t('notMeasured', { check: checkLabel(m.notMeasured) }), 'chip mid'));
+  const summary = checkSummary(m.checks, m.unrun);
   const tier = checkTier(summary.passed, summary.total);
   if (tier) {
     const chip = el('span', '', `chip ${tier}`);
@@ -222,15 +227,27 @@ function renderMint(m, i, weights, maxScore) {
   );
   card.append(meta);
 
-  const names = Object.entries(m.checks);
+  const names = Object.entries(m.checks ?? {});
   if (names.length) {
     const det = el('details', '', 'checks');
     det.append(el('summary', t('checks')));
-    const ul = el('ul');
-    for (const [name, c] of names) {
-      ul.append(el('li', `${c.ok ? '✓' : '✗'} ${checkLabel(name)}${c.error ? ` (${c.error})` : ''}`, c.ok ? 'ok' : 'fail'));
+    const appendList = (entries) => {
+      const ul = el('ul');
+      for (const [name, c] of entries) {
+        ul.append(el('li', `${c.ok ? '✓' : '✗'} ${checkLabel(name)}${c.error ? ` (${c.error})` : ''}`, c.ok ? 'ok' : 'fail'));
+      }
+      det.append(ul);
+    };
+    const paidTime = formatBuenosAiresTime(m.paidCheckedAt, lang);
+    const { publicChecks, cycleChecks } = splitChecks(m.checks);
+    if (paidTime && cycleChecks.length) {
+      if (publicChecks.length) appendList(publicChecks);
+      det.append(el('p', t('paidCheckedAt', { time: paidTime }), 'checks-paid'));
+      appendList(cycleChecks);
+    } else {
+      appendList(names);
+      if (paidTime) det.append(el('p', t('paidCheckedAt', { time: paidTime }), 'checks-paid'));
     }
-    det.append(ul);
     card.append(det);
   }
   return card;
@@ -249,7 +266,7 @@ function render() {
   const { generatedAt, weights, mints } = ranking;
   const maxScore = Object.values(weights).reduce((a, b) => a + b, 0);
   document.getElementById('updated').textContent = t('updated', {
-    time: new Date(generatedAt).toLocaleString(lang === 'es' ? 'es-AR' : 'en-GB', { timeZone: 'America/Argentina/Buenos_Aires' }),
+    time: formatBuenosAiresTime(generatedAt, lang) ?? '',
   });
   fillScoreFaq();
   const shown = mints

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { MESSAGES, pickLanguage, translate } from '../site/i18n.js';
 
@@ -49,5 +50,29 @@ describe('MESSAGES', () => {
       expect(MESSAGES.en[key].length, key).toBeGreaterThan(0);
       expect(MESSAGES.es[key].length, key).toBeGreaterThan(0);
     }
+  });
+
+  it('labels a timed-out mint in both languages', () => {
+    expect(MESSAGES.en.timedOut).toBe('Timed out');
+    expect(MESSAGES.es.timedOut).toBe('No respondió a tiempo');
+  });
+
+  it('labels a mint that had no time left to pay in both languages', () => {
+    expect(MESSAGES.en.noTime).toBe('No time to pay this run');
+    expect(MESSAGES.es.noTime).toBe('Sin tiempo para pagar en esta corrida');
+  });
+
+  it('labels the paid cycle timestamp and documents daily payment vs 3h checks in FAQ and index.html', () => {
+    expect(MESSAGES.en.paidCheckedAt).toContain('{time}');
+    expect(MESSAGES.es.paidCheckedAt).toContain('{time}');
+    expect(MESSAGES.en.faqUpdateA).toMatch(/3 hours/i);
+    expect(MESSAGES.en.faqUpdateA).toMatch(/once a day/i);
+    expect(MESSAGES.es.faqUpdateA).toMatch(/3 horas/i);
+    expect(MESSAGES.es.faqUpdateA).toMatch(/una vez por d[ií]a/i);
+    expect(MESSAGES.en.faqChecksA).toMatch(/once a day/i);
+    expect(MESSAGES.es.faqChecksA).toMatch(/una vez por d[ií]a/i);
+    const html = readFileSync(new URL('../site/index.html', import.meta.url), 'utf8');
+    expect(html).toContain(MESSAGES.en.faqChecksA);
+    expect(html).toContain(MESSAGES.en.faqUpdateA);
   });
 });

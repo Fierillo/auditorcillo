@@ -7,6 +7,7 @@ export function partPercent(
 export function formatScore(value: number | null | undefined): string;
 export function checkSummary(
   checks: Record<string, { ok: boolean }> | null | undefined,
+  unrun?: readonly number[] | null,
 ): { passed: number; total: number };
 export function isHighlightedRank(index: number, total: number): boolean;
 export function checkTier(passed: number, total: number): 'ok' | 'mid' | 'fail' | null;
@@ -29,3 +30,8 @@ export function headerMorph(
   big: { top: number; left: number; width: number },
   small: { top: number; left: number; width: number },
 ): { x: number; scale: number; docked: boolean };
+export function splitChecks<T>(checks: Record<string, T> | null | undefined): {
+  publicChecks: Array<[string, T]>;
+  cycleChecks: Array<[string, T]>;
+};
+export function formatBuenosAiresTime(iso: string | null | undefined, lang: string): string | null;

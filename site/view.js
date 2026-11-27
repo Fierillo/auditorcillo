@@ -21,9 +21,10 @@ export function formatScore(value) {
   return (Math.round(value * 10) / 10).toString();
 }
 
-export function checkSummary(checks) {
+export function checkSummary(checks, unrun) {
   const list = Object.values(checks ?? {});
-  return { passed: list.filter((c) => c.ok).length, total: list.length };
+  const missed = Array.isArray(unrun) ? unrun.length : 0;
+  return { passed: list.filter((c) => c.ok).length, total: list.length + missed };
 }
 
 export function isHighlightedRank(index, total) {
@@ -139,4 +140,21 @@ export function headerMorph(scrollY, big, small) {
     scale: 1 + (small.width / big.width - 1) * progress,
     docked: progress >= 1,
   };
+}
+
+export function splitChecks(checks) {
+  const publicChecks = [];
+  const cycleChecks = [];
+  for (const [name, value] of Object.entries(checks ?? {})) {
+    if (value?.cycle === true) cycleChecks.push([name, value]);
+    else publicChecks.push([name, value]);
+  }
+  return { publicChecks, cycleChecks };
+}
+
+export function formatBuenosAiresTime(iso, lang) {
+  if (typeof iso !== 'string' || !iso.trim()) return null;
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return null;
+  return new Date(ms).toLocaleString(lang === 'es' ? 'es-AR' : 'en-GB', { timeZone: 'America/Argentina/Buenos_Aires' });
 }

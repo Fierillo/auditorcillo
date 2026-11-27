@@ -87,7 +87,7 @@
     </details>
     <details id="faq-checks">
       <summary data-i18n="faqChecksQ">What does Auditorcillo check?</summary>
-      <p class="faq-a" data-i18n="faqChecksA">On every run it checks that keyset IDs derive from the published keys and that active keysets publish keys (NUT-02), and that the mint can create a mint quote (NUT-04) and a melt quote (NUT-05). If the mint announces NUT-07, it also checks token state. A full cycle — issuing tokens, DLEQ proofs, swaps, rejecting a spent token, paying a Lightning invoice and marking tokens as spent — runs on local FakeWallet mints, and on real mints only when a wallet is configured.</p>
+      <p class="faq-a" data-i18n="faqChecksA">On every run it checks that keyset IDs derive from the published keys and that active keysets publish keys (NUT-02), and that the mint can create a mint quote (NUT-04) and a melt quote (NUT-05). If the mint announces NUT-07, it also checks token state. A full cycle — issuing tokens, DLEQ proofs, swaps, rejecting a spent token, paying a Lightning invoice and marking tokens as spent — runs on every probe on local FakeWallet mints, and once a day on real mints when a wallet is configured (other runs reuse each mint’s last paid result).</p>
     </details>
     <details id="faq-score">
       <summary data-i18n="faqScoreQ">How is the score calculated?</summary>
@@ -95,7 +95,7 @@
     </details>
     <details id="faq-update">
       <summary data-i18n="faqUpdateQ">How often is the ranking updated?</summary>
-      <p class="faq-a" data-i18n="faqUpdateA">A scheduled GitHub Action probes the mint list about every 3 hours and publishes a new ranking.json.</p>
+      <p class="faq-a" data-i18n="faqUpdateA">A scheduled GitHub Action runs public checks and updates uptime about every 3 hours, runs the paid cycle on real mints once a day (12:17 UTC / 09:17 Buenos Aires time), and publishes a new ranking.json.</p>
     </details>
     <details id="faq-fraud">
       <summary data-i18n="faqFraudQ">What does “possible fraud” mean?</summary>
