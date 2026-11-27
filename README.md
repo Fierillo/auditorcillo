@@ -4,6 +4,7 @@ Audits public [Cashu](https://cashu.space) mints and ranks them by **observed be
 
 - A GitHub Action (`.github/workflows/ranking.yml`) runs public checks and updates uptime every 3 hours, runs the paid cycle on real mints once a day (`12:17` UTC / `09:17` ART, reusing the last paid result in between), and commits `site/ranking.json`.
 - `site/` is a static page (plain HTML/JS) deployed on Vercel (`vercel.json`) that reads that JSON. No server. English and Spanish: it follows the browser language and keeps an EN/ES toggle in `localStorage`.
+- Branches: `master` is production (Vercel publishes it and the Action commits the ranking there); `dev` is preview.
 
 ## Run locally
 
