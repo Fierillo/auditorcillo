@@ -1,5 +1,6 @@
 // The whole scoring policy lives here: change weights or thresholds only in SCORE.
 import { CYCLE_CHECKS } from '../site/checks.js';
+import { isKeptPct } from '../site/fees.js';
 export const SCORE = {
   /** Fees are shown but weigh 0 until a real withdrawal measures them; then this becomes 35/25/15/15/10. */
   weights: { availability: 40, nuts: 30, keysets: 20, fees: 0, info: 10 },
@@ -45,7 +46,7 @@ const share = (oks: boolean[]) => (oks.length ? oks.filter(Boolean).length / oks
 /** Share of the fee points: 1 at 0 % kept, 0 from SCORE.fees.zeroPct up. Missing or invalid fee data is not measured and earns nothing, so hiding fees never pays. */
 export function feeShare(fees: Observation['fees']): number {
   const kept = fees?.keptPct;
-  if (typeof kept !== 'number' || !Number.isFinite(kept) || kept < 0) return 0;
+  if (!isKeptPct(kept)) return 0;
   return Math.max(0, 1 - kept / SCORE.fees.zeroPct);
 }
 
