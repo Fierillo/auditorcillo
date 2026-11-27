@@ -1,0 +1,38 @@
+# Lint, typecheck and offline tests on every push and pull request to dev. No secrets and no network beyond the install:
+# the live tests (test/live) stay out, as in `pnpm test`.
+name: ci
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        timeout-minutes: 2
+        with:
+          persist-credentials: false
+      # Without a version input it uses the pnpm version pinned in package.json `packageManager`.
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        timeout-minutes: 1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        timeout-minutes: 2
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        timeout-minutes: 3
+      - run: pnpm lint
+        timeout-minutes: 2
+      - run: pnpm typecheck
+        timeout-minutes: 2
+      - run: pnpm test
+        timeout-minutes: 3
