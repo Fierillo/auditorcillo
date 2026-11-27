@@ -7,6 +7,7 @@ import {
   formatScore,
   headerMorph,
   isHighlightedRank,
+  isScoredPart,
   isSafeIconUrl,
   matchesMint,
   mintInitials,
@@ -44,6 +45,17 @@ describe('barPercent', () => {
     expect(barPercent(undefined)).toBe(0);
     expect(barPercent(Number.NaN)).toBe(0);
     expect(barPercent(Number.POSITIVE_INFINITY)).toBe(0);
+  });
+});
+
+describe('isScoredPart', () => {
+  it('is true only for a part with a positive weight, so a 0 or missing weight reads as not measured', () => {
+    expect(isScoredPart(15)).toBe(true);
+    expect(isScoredPart(0)).toBe(false);
+    expect(isScoredPart(undefined)).toBe(false);
+    expect(isScoredPart(null)).toBe(false);
+    expect(isScoredPart(Number.NaN)).toBe(false);
+    expect(isScoredPart(-5)).toBe(false);
   });
 });
 

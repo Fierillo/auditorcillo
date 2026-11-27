@@ -57,6 +57,15 @@ describe('MESSAGES', () => {
     }
   });
 
+  it('labels the fees part, says it is not measured yet and that it will be measured with a real withdrawal', () => {
+    expect(MESSAGES.en.colFees).toContain('Fees');
+    expect(MESSAGES.es.colFees).toContain('Comisiones');
+    expect(MESSAGES.en.partNotMeasured).toBe('Not measured');
+    expect(MESSAGES.es.partNotMeasured).toBe('Sin medir');
+    expect(MESSAGES.en.faqScoreA).toContain('Fees: shown but not counted yet; they will be measured with a real withdrawal.');
+    expect(MESSAGES.es.faqScoreA).toContain('Comisiones: se muestran pero todavía no suman; se van a medir con un retiro real.');
+  });
+
   it('never renders a placeholder left unfilled, in any message or language', () => {
     for (const lang of ['en', 'es'] as const) {
       for (const key of Object.keys(MESSAGES.en)) expect(translate(MESSAGES, lang, key, {}), `${lang}.${key}`).not.toMatch(/\{\w+\}/);

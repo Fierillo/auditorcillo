@@ -9,10 +9,13 @@ export function barPercent(value) {
   return Math.min(100, Math.max(0, value));
 }
 
+/** A part counts toward the score only with a positive weight; otherwise it is shown as not measured. */
+export function isScoredPart(weight) {
+  return typeof weight === 'number' && Number.isFinite(weight) && weight > 0;
+}
+
 export function partPercent(part, weight) {
-  if (typeof part !== 'number' || typeof weight !== 'number' || !Number.isFinite(part) || !Number.isFinite(weight) || weight <= 0) {
-    return 0;
-  }
+  if (typeof part !== 'number' || !Number.isFinite(part) || !isScoredPart(weight)) return 0;
   return barPercent((part / weight) * 100);
 }
 

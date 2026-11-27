@@ -10,6 +10,8 @@ export const MESSAGES = {
     colAvailability: '[faq-score]Availability[/faq-score]',
     colNuts: '[faq-checks]NUTs[/faq-checks]',
     colKeysets: '[faq-checks]Keysets[/faq-checks]',
+    colFees: '[faq-score]Fees[/faq-score]',
+    partNotMeasured: 'Not measured',
     colInfo: '[faq-score]Info[/faq-score]',
     loading: 'Loading…',
     updated: 'Updated: {time} (Buenos Aires time).',
@@ -17,7 +19,7 @@ export const MESSAGES = {
     faqScoreLink: 'How is this calculated?',
     faqScoreQ: 'How is the score calculated?',
     faqScoreA:
-      'Scores are shown on a 1–10 scale. A mint that accepts spent tokens or publishes invalid keysets scores 0. The overall score combines availability {availability} %, announced NUT compliance {nuts} %, keyset consistency {keysets} %, and info and contact {info} %. Availability is the 7-day uptime times a latency factor (full credit when the mint is fast, half when it is slow).',
+      'Scores are shown on a 1–10 scale. A mint that accepts spent tokens or publishes invalid keysets scores 0. The overall score combines availability {availability} %, announced NUT compliance {nuts} %, keyset consistency {keysets} %, and info and contact {info} %. Availability is the 7-day uptime times a latency factor (full credit when the mint is fast, half when it is slow). Fees: shown but not counted yet; they will be measured with a real withdrawal.',
     faqCashuQ: 'What is Cashu, and what is a mint?',
     faqCashuA:
       'Cashu is an ecash protocol. A mint is a server that issues and redeems Cashu tokens. Auditorcillo ranks public mints by what it observes when it probes them, not by what they announce.',
@@ -80,6 +82,8 @@ export const MESSAGES = {
     colAvailability: '[faq-score]Disponibilidad[/faq-score]',
     colNuts: '[faq-checks]NUTs[/faq-checks]',
     colKeysets: '[faq-checks]Keysets[/faq-checks]',
+    colFees: '[faq-score]Comisiones[/faq-score]',
+    partNotMeasured: 'Sin medir',
     colInfo: '[faq-score]Info[/faq-score]',
     loading: 'Cargando…',
     updated: 'Actualizado: {time} (hora de Buenos Aires).',
@@ -87,7 +91,7 @@ export const MESSAGES = {
     faqScoreLink: '¿Cómo se calcula?',
     faqScoreQ: '¿Cómo se calcula el puntaje?',
     faqScoreA:
-      'Los puntajes se muestran en una escala de 1 a 10. Un mint que acepta tokens gastados o publica keysets inválidos queda en 0. El puntaje general combina disponibilidad {availability} %, cumplimiento de NUTs anunciados {nuts} %, consistencia de keysets {keysets} %, e info y contacto {info} %. La disponibilidad es el tiempo en línea de los últimos 7 días por un factor de latencia (crédito completo cuando el mint responde rápido, la mitad cuando es lento).',
+      'Los puntajes se muestran en una escala de 1 a 10. Un mint que acepta tokens gastados o publica keysets inválidos queda en 0. El puntaje general combina disponibilidad {availability} %, cumplimiento de NUTs anunciados {nuts} %, consistencia de keysets {keysets} %, e info y contacto {info} %. La disponibilidad es el tiempo en línea de los últimos 7 días por un factor de latencia (crédito completo cuando el mint responde rápido, la mitad cuando es lento). Comisiones: se muestran pero todavía no suman; se van a medir con un retiro real.',
     faqCashuQ: '¿Qué es Cashu y qué es un mint?',
     faqCashuA:
       'Cashu es un protocolo de ecash. Un mint es un servidor que emite y canjea tokens Cashu. Auditorcillo ordena mints públicos según lo que observa al probarlos, no según lo que anuncian.',

@@ -7,6 +7,7 @@ import {
   formatScore,
   headerMorph,
   isHighlightedRank,
+  isScoredPart,
   isSafeIconUrl,
   matchesMint,
   mintInitials,
@@ -25,6 +26,7 @@ const PARTS = [
   ['availability', 'colAvailability'],
   ['nuts', 'colNuts'],
   ['keysets', 'colKeysets'],
+  ['fees', 'colFees'],
   ['info', 'colInfo'],
 ];
 const FAQ_HREFS = {
@@ -126,16 +128,19 @@ function portrait(m) {
   return img;
 }
 
+/** With `percent` null the meter has no bar: the value is not a measurement. */
 function meter(label, valueText, percent, tier) {
   const wrap = el('div', '', 'meter');
   const lab = el('div', '', 'meter-label');
   const name = label instanceof Node ? label : el('span', label);
   lab.append(name, el('span', valueText, 'value'));
+  wrap.append(lab);
+  if (percent == null) return wrap;
   const track = el('div', '', 'track');
   const fill = el('div', '', tier ? `fill ${tier}` : 'fill');
   fill.style.width = `${percent}%`;
   track.append(fill);
-  wrap.append(lab, track);
+  wrap.append(track);
   return wrap;
 }
 
@@ -197,9 +202,14 @@ function renderMint(m, i, weights, maxScore) {
 
   const parts = el('div', '', 'parts');
   for (const [part, labelKey] of PARTS) {
+    const label = appendLinked(el('span'), t(labelKey), FAQ_HREFS);
+    if (!isScoredPart(weights[part])) {
+      parts.append(meter(label, t('partNotMeasured'), null));
+      continue;
+    }
     const value = m.score.parts[part];
     const percent = partPercent(value, weights[part]);
-    parts.append(meter(appendLinked(el('span'), t(labelKey), FAQ_HREFS), displayTen(value, weights[part]), percent, scoreTier(percent)));
+    parts.append(meter(label, displayTen(value, weights[part]), percent, scoreTier(percent)));
   }
   card.append(parts);
 

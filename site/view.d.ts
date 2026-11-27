@@ -1,5 +1,6 @@
 export function scoreTier(score: number): 'high' | 'mid' | 'low';
 export function barPercent(value: number | null | undefined): number;
+export function isScoredPart(weight: number | null | undefined): boolean;
 export function partPercent(
   part: number | null | undefined,
   weight: number | null | undefined,
